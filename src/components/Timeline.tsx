@@ -56,6 +56,43 @@ const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate, 
     return true;
   });
 
+  // Calculate event positions and widths for overlapping events
+  const calculateEventLayout = () => {
+    const eventGroups: Event[][] = [];
+    const processedEvents = new Set<string>();
+
+    filteredEvents.forEach(event => {
+      if (processedEvents.has(event.id)) return;
+
+      const overlappingEvents = [event];
+      processedEvents.add(event.id);
+
+              // Find all events that overlap with this event
+        filteredEvents.forEach(otherEvent => {
+          if (otherEvent.id === event.id || processedEvents.has(otherEvent.id)) return;
+
+          const eventStart = event.hour * 60 + event.minute;
+          const eventEnd = eventStart + (event.duration || 60); // Use duration or default to 1 hour
+          const otherStart = otherEvent.hour * 60 + otherEvent.minute;
+          const otherEnd = otherStart + (otherEvent.duration || 60);
+
+          // Check if events overlap
+          if (eventStart < otherEnd && eventEnd > otherStart) {
+            overlappingEvents.push(otherEvent);
+            processedEvents.add(otherEvent.id);
+          }
+        });
+
+      if (overlappingEvents.length > 0) {
+        eventGroups.push(overlappingEvents);
+      }
+    });
+
+    return eventGroups;
+  };
+
+  const eventGroups = calculateEventLayout();
+
   // Convert mouse position to time and round to nearest hour or half-hour
   const getTimeFromPosition = (clientY: number) => {
     if (!timelineRef.current) return { hour: 0, minute: 0 };
@@ -170,23 +207,55 @@ const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate, 
         })}
 
         {/* Event cards */}
-        {filteredEvents.map(event => {
-          const eventPosition = (event.hour * 48) + (event.minute / 60) * 48;
-          const isPast = isCurrentTimeOnSelectedDate() && 
-                        (currentTime.getHours() > event.hour || 
-                         (currentTime.getHours() === event.hour && currentTime.getMinutes() > event.minute));
+        {eventGroups.map((group, groupIndex) => {
+          const isOverlapping = group.length > 1;
+          const isMobile = window.innerWidth < 768;
+          
+          // On mobile, allow partial overlap for better readability
+          const eventWidth = isOverlapping 
+            ? (isMobile ? 'calc(100% - 32px)' : `calc((100% - 32px) / ${group.length})`)
+            : 'calc(100% - 32px)';
+          
+          return group.map((event, eventIndex) => {
+            const eventPosition = (event.hour * 48) + (event.minute / 60) * 48;
+            const isPast = isCurrentTimeOnSelectedDate() && 
+                          (currentTime.getHours() > event.hour || 
+                           (currentTime.getHours() === event.hour && currentTime.getMinutes() > event.minute));
 
-          return (
-            <div
-              key={event.id}
-              className={`absolute left-8 transition-opacity duration-300 ${
-                isPast ? 'opacity-70' : 'opacity-100'
-              }`}
-              style={{ top: `${eventPosition}px` }}
-            >
-              <EventCard event={event} />
-            </div>
-          );
+            // Calculate left position with overlap on mobile
+            let leftPosition;
+            if (isOverlapping && isMobile) {
+              // On mobile, stack events with slight overlap
+              leftPosition = `calc(8px + (${eventIndex} * 20px))`;
+            } else if (isOverlapping) {
+              // On desktop, divide width equally
+              leftPosition = `calc(8px + (${eventIndex} * (100% - 32px) / ${group.length}))`;
+            } else {
+              leftPosition = '8px';
+            }
+
+            // Calculate event height based on duration
+            const eventDuration = event.duration || 60;
+            const eventHeight = Math.max(48, (eventDuration / 60) * 48); // Minimum 48px height
+
+            return (
+              <div
+                key={event.id}
+                className={`absolute transition-opacity duration-300 ${
+                  isPast ? 'opacity-70' : 'opacity-100'
+                } ${isOverlapping && isMobile ? 'mobile-overlap' : ''}`}
+                style={{
+                  top: `${eventPosition}px`,
+                  left: leftPosition,
+                  width: eventWidth,
+                  height: `${eventHeight}px`,
+                  zIndex: isOverlapping ? (10 + eventIndex) : 5
+                }}
+              >
+                <EventCard event={event} isOverlapping={isOverlapping} />
+              </div>
+            );
+          });
         })}
 
         {/* Drag preview */}

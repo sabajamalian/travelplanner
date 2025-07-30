@@ -12,6 +12,7 @@ export interface Event {
   description?: string;
   hour: number;
   minute: number;
+  duration?: number; // in minutes
 }
 
 const Planner: React.FC = () => {
@@ -22,12 +23,16 @@ const Planner: React.FC = () => {
 
   // Sample events data
   const [events, setEvents] = useState<Event[]>([
-    { id: '1', title: 'Breakfast at Tiffany\'s', startTime: '08:00', endTime: '09:00', hour: 8, minute: 0 },
-    { id: '2', title: 'City Tour', startTime: '10:30', endTime: '12:00', hour: 10, minute: 30 },
-    { id: '3', title: 'Lunch at Central Park', startTime: '12:00', endTime: '13:00', hour: 12, minute: 0 },
-    { id: '4', title: 'Museum Visit', startTime: '14:00', endTime: '16:00', hour: 14, minute: 0 },
-    { id: '5', title: 'Shopping', startTime: '16:30', endTime: '18:00', hour: 16, minute: 30 },
-    { id: '6', title: 'Dinner Reservation', startTime: '19:00', endTime: '21:00', hour: 19, minute: 0 },
+    { id: '1', title: 'Breakfast at Tiffany\'s', startTime: '08:00', endTime: '09:00', hour: 8, minute: 0, duration: 60 },
+    { id: '2', title: 'City Tour', startTime: '10:30', endTime: '12:00', hour: 10, minute: 30, duration: 90 },
+    { id: '3', title: 'Lunch at Central Park', startTime: '12:00', endTime: '13:00', hour: 12, minute: 0, duration: 60 },
+    { id: '4', title: 'Museum Visit', startTime: '14:00', endTime: '16:00', hour: 14, minute: 0, duration: 120 },
+    { id: '5', title: 'Shopping', startTime: '16:30', endTime: '18:00', hour: 16, minute: 30, duration: 90 },
+    { id: '6', title: 'Dinner Reservation', startTime: '19:00', endTime: '21:00', hour: 19, minute: 0, duration: 120 },
+    // Add some overlapping events for testing
+    { id: '7', title: 'Coffee Meeting', startTime: '10:00', endTime: '11:00', hour: 10, minute: 0, duration: 60 },
+    { id: '8', title: 'Team Standup', startTime: '09:30', endTime: '10:00', hour: 9, minute: 30, duration: 30 },
+    { id: '9', title: 'Client Call', startTime: '15:00', endTime: '16:00', hour: 15, minute: 0, duration: 60 },
   ]);
 
   // Update current time every minute

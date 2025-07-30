@@ -47,7 +47,10 @@
   }
   
   .event-card {
-    @apply absolute left-4 mt-2 p-3 bg-white rounded-xl shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 ease-in-out border border-gray-100;
+    @apply absolute p-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 ease-in-out border border-gray-100;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));
+    backdrop-filter: blur(4px);
+    margin: 2px;
   }
   
   .timeline-container {
@@ -56,6 +59,25 @@
   
   .timeline-container:hover {
     @apply cursor-crosshair;
+  }
+  
+  .mobile-overlap {
+    @apply shadow-lg;
+  }
+  
+  .mobile-overlap:hover {
+    @apply z-50;
+  }
+  
+  /* Enhanced styling for overlapping events */
+  .event-card.overlapping {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .event-card.overlapping:hover {
+    background: linear-gradient(to right, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
   .date-button {
@@ -87,11 +109,15 @@
     }
     
     .event-card {
-      @apply left-4 p-2;
+      @apply p-2;
     }
     
     .date-button {
       @apply px-2 py-1 text-xs;
+    }
+    
+    .mobile-overlap {
+      @apply shadow-xl;
     }
   }
 } 
