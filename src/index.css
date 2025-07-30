@@ -16,6 +16,11 @@
     @apply relative flex items-start h-12;
   }
   
+  .timeline-hour::before {
+    content: '';
+    @apply absolute left-0 right-0 h-6 bg-gray-50/30 pointer-events-none;
+  }
+  
   .timeline-time {
     @apply absolute -left-24 text-sm text-gray-600 font-semibold bg-white px-2 py-1 rounded-md shadow-sm;
   }
@@ -43,6 +48,14 @@
   
   .event-card {
     @apply absolute left-4 mt-2 p-3 bg-white rounded-xl shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 ease-in-out border border-gray-100;
+  }
+  
+  .timeline-container {
+    @apply cursor-crosshair;
+  }
+  
+  .timeline-container:hover {
+    @apply cursor-crosshair;
   }
   
   .date-button {

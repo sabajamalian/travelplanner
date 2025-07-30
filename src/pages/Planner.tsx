@@ -6,7 +6,10 @@ import Timeline from '../components/Timeline';
 export interface Event {
   id: string;
   title: string;
-  time: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  description?: string;
   hour: number;
   minute: number;
 }
@@ -18,13 +21,13 @@ const Planner: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   // Sample events data
-  const [events] = useState<Event[]>([
-    { id: '1', title: 'Breakfast at Tiffany\'s', time: '08:00', hour: 8, minute: 0 },
-    { id: '2', title: 'City Tour', time: '10:30', hour: 10, minute: 30 },
-    { id: '3', title: 'Lunch at Central Park', time: '12:00', hour: 12, minute: 0 },
-    { id: '4', title: 'Museum Visit', time: '14:00', hour: 14, minute: 0 },
-    { id: '5', title: 'Shopping', time: '16:30', hour: 16, minute: 30 },
-    { id: '6', title: 'Dinner Reservation', time: '19:00', hour: 19, minute: 0 },
+  const [events, setEvents] = useState<Event[]>([
+    { id: '1', title: 'Breakfast at Tiffany\'s', startTime: '08:00', endTime: '09:00', hour: 8, minute: 0 },
+    { id: '2', title: 'City Tour', startTime: '10:30', endTime: '12:00', hour: 10, minute: 30 },
+    { id: '3', title: 'Lunch at Central Park', startTime: '12:00', endTime: '13:00', hour: 12, minute: 0 },
+    { id: '4', title: 'Museum Visit', startTime: '14:00', endTime: '16:00', hour: 14, minute: 0 },
+    { id: '5', title: 'Shopping', startTime: '16:30', endTime: '18:00', hour: 16, minute: 30 },
+    { id: '6', title: 'Dinner Reservation', startTime: '19:00', endTime: '21:00', hour: 19, minute: 0 },
   ]);
 
   // Update current time every minute
@@ -48,6 +51,10 @@ const Planner: React.FC = () => {
     setTimezone(newTimezone);
   };
 
+  const handleEventCreate = (newEvent: Event) => {
+    setEvents(prevEvents => [...prevEvents, newEvent]);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-white/90 backdrop-blur-sm rounded-lg mx-4 my-4 shadow-xl border border-white/20">
@@ -65,6 +72,7 @@ const Planner: React.FC = () => {
         events={events} 
         currentTime={currentTime}
         selectedDate={selectedDate}
+        onEventCreate={handleEventCreate}
       />
       </div>
     </div>

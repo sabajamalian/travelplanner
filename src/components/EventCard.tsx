@@ -40,8 +40,13 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
           {event.title}
         </p>
         <p className="text-xs text-text-secondary mt-1">
-          {event.time}
+          {event.startTime} - {event.endTime}
         </p>
+        {event.location && (
+          <p className="text-xs text-text-secondary mt-1">
+            📍 {event.location}
+          </p>
+        )}
       </div>
     </div>
   );

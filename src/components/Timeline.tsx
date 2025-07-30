@@ -1,15 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import EventCard from './EventCard';
+import EventModal from './EventModal';
 import { Event } from '../pages/Planner';
 
 interface TimelineProps {
   events: Event[];
   currentTime: Date;
   selectedDate: Date;
+  onEventCreate: (event: Event) => void;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate }) => {
+const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate, onEventCreate }) => {
   const timelineRef = useRef<HTMLDivElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dragStart, setDragStart] = useState<{ hour: number; minute: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ hour: number; minute: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Generate hours from 00:00 to 23:00
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -23,9 +29,9 @@ const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate }
   };
 
   // Check if current time is on selected date
-  const isCurrentTimeOnSelectedDate = () => {
+  const isCurrentTimeOnSelectedDate = useCallback(() => {
     return currentTime.toDateString() === selectedDate.toDateString();
-  };
+  }, [currentTime, selectedDate]);
 
   // Scroll to appropriate position based on date
   useEffect(() => {
@@ -50,8 +56,95 @@ const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate }
     return true;
   });
 
+  // Convert mouse position to time and round to nearest hour or half-hour
+  const getTimeFromPosition = (clientY: number) => {
+    if (!timelineRef.current) return { hour: 0, minute: 0 };
+    
+    const rect = timelineRef.current.getBoundingClientRect();
+    const scrollTop = timelineRef.current.scrollTop;
+    const relativeY = clientY - rect.top + scrollTop;
+    
+    // Account for the py-4 padding (16px top and bottom)
+    const adjustedY = relativeY - 16;
+    
+    let hour = Math.floor(adjustedY / 48);
+    const rawMinute = Math.floor((adjustedY % 48) / 48 * 60);
+    
+    // Round to nearest 30-minute interval
+    let roundedMinute;
+    if (rawMinute < 15) {
+      roundedMinute = 0; // Round down to hour
+    } else if (rawMinute < 45) {
+      roundedMinute = 30; // Round to half-hour
+    } else {
+      roundedMinute = 0; // Round up to next hour
+      hour = Math.min(23, hour + 1);
+    }
+    
+    return { hour: Math.max(0, Math.min(23, hour)), minute: roundedMinute };
+  };
+
+  // Handle mouse down for drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const time = getTimeFromPosition(e.clientY);
+    setDragStart(time);
+    setDragEnd(time);
+    setIsDragging(true);
+  };
+
+  // Handle mouse move for drag
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    
+    const time = getTimeFromPosition(e.clientY);
+    setDragEnd(time);
+  };
+
+  // Handle mouse up for drag end
+  const handleMouseUp = () => {
+    if (!isDragging || !dragStart || !dragEnd) return;
+    
+    setIsDragging(false);
+    
+    // Ensure start is before end
+    const start = dragStart.hour * 60 + dragStart.minute;
+    const end = dragEnd.hour * 60 + dragEnd.minute;
+    
+    if (start === end) {
+      // Single click - create 1-hour event
+      setIsModalOpen(true);
+      // Modal will handle the event creation
+    } else {
+      // Drag - create event with custom duration
+      setIsModalOpen(true);
+      // Modal will handle the event creation
+    }
+    
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  // Handle modal save
+  const handleModalSave = (eventData: any) => {
+    const newEvent: Event = {
+      ...eventData,
+      hour: parseInt(eventData.startTime.split(':')[0]),
+      minute: parseInt(eventData.startTime.split(':')[1])
+    };
+    
+    onEventCreate(newEvent);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="relative h-[calc(100vh-200px)] overflow-y-auto max-w-5xl mx-auto px-4" ref={timelineRef}>
+    <div 
+      className="relative h-[calc(100vh-200px)] overflow-y-auto max-w-5xl mx-auto px-4 timeline-container" 
+      ref={timelineRef}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={() => setIsDragging(false)}
+    >
       <div className="relative border-l-2 border-gray-300 ml-20 py-4 bg-gradient-to-b from-transparent via-gray-50/30 to-transparent">
         {/* Current time indicator */}
         {isCurrentTimeOnSelectedDate() && (
@@ -95,7 +188,37 @@ const Timeline: React.FC<TimelineProps> = ({ events, currentTime, selectedDate }
             </div>
           );
         })}
+
+        {/* Drag preview */}
+        {isDragging && dragStart && dragEnd && (
+          <div 
+            className="absolute left-8 bg-primary/20 border border-primary rounded-lg z-20 pointer-events-none"
+            style={{
+              top: `${Math.min(dragStart.hour * 48 + dragStart.minute * 0.8, dragEnd.hour * 48 + dragEnd.minute * 0.8) + 16}px`,
+              height: `${Math.abs((dragEnd.hour * 48 + dragEnd.minute * 0.8) - (dragStart.hour * 48 + dragStart.minute * 0.8))}px`,
+              minHeight: '24px'
+            }}
+          >
+            <div className="p-2 text-xs text-primary font-medium">
+              {dragStart.hour.toString().padStart(2, '0')}:{dragStart.minute.toString().padStart(2, '0')} - {dragEnd.hour.toString().padStart(2, '0')}:{dragEnd.minute.toString().padStart(2, '0')}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Event Creation Modal */}
+      <EventModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleModalSave}
+        initialData={dragStart && dragEnd ? {
+          startHour: Math.min(dragStart.hour, dragEnd.hour),
+          startMinute: Math.min(dragStart.hour, dragEnd.hour) === dragStart.hour ? dragStart.minute : dragEnd.minute,
+          endHour: Math.max(dragStart.hour, dragEnd.hour),
+          endMinute: Math.max(dragStart.hour, dragEnd.hour) === dragStart.hour ? dragStart.minute : dragEnd.minute,
+          date: selectedDate
+        } : undefined}
+      />
     </div>
   );
 };
