@@ -4,6 +4,7 @@ import { Event } from '../pages/Planner';
 interface EventCardProps {
   event: Event;
   isOverlapping?: boolean;
+  onClick?: (event: Event) => void;
 }
 
 // Color variants for different event types with gradient backgrounds
@@ -16,12 +17,14 @@ const eventColors = [
   'border-l-4 border-l-teal-500',
 ];
 
-const EventCard: React.FC<EventCardProps> = ({ event, isOverlapping = false }) => {
+const EventCard: React.FC<EventCardProps> = ({ event, isOverlapping = false, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleClick = () => {
-    // In a real app, this would open a modal with event details
-    console.log('Event clicked:', event.title);
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the click from bubbling up to the timeline
+    if (onClick) {
+      onClick(event);
+    }
   };
 
   const colorIndex = parseInt(event.id) % eventColors.length;
@@ -36,18 +39,16 @@ const EventCard: React.FC<EventCardProps> = ({ event, isOverlapping = false }) =
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
-      <div className="flex flex-col h-full justify-center">
-        <p className="font-medium text-text-primary text-sm leading-tight">
+      <div className="flex flex-col h-full justify-center space-y-1">
+        {/* Title */}
+        <p className="font-semibold text-text-primary text-sm leading-tight truncate">
           {event.title}
         </p>
-        <p className="text-xs text-text-secondary mt-1">
+        
+        {/* Time */}
+        <p className="text-xs text-text-secondary truncate">
           {event.startTime} - {event.endTime}
         </p>
-        {event.location && (
-          <p className="text-xs text-text-secondary mt-1">
-            📍 {event.location}
-          </p>
-        )}
       </div>
     </div>
   );

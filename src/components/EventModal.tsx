@@ -90,52 +90,69 @@ const EventModal: React.FC<EventModalProps> = ({
         <div className="p-6 space-y-4">
           {/* Title */}
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title *
+            </label>
             <input
               type="text"
-              placeholder="Event title"
+              placeholder="Enter event title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               autoFocus
+              required
             />
           </div>
 
           {/* Time */}
-          <div className="flex items-center gap-3">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <div className="flex items-center gap-2">
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <span className="text-gray-500">to</span>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Time
+            </label>
+            <div className="flex items-center gap-3">
+              <Clock className="w-4 h-4 text-gray-500" />
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
           </div>
 
           {/* Location */}
-          <div className="flex items-center gap-3">
-            <MapPin className="w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Location (optional)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location
+            </label>
+            <div className="flex items-center gap-3">
+              <MapPin className="w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Enter location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
           </div>
 
           {/* Description */}
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
-              placeholder="Description (optional)"
+              placeholder="Enter event description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
