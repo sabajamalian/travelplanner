@@ -4,6 +4,8 @@ import format from 'date-fns/format'
 import parse from 'date-fns/parse'
 import startOfWeek from 'date-fns/startOfWeek'
 import getDay from 'date-fns/getDay'
+import addDays from 'date-fns/addDays'
+import subDays from 'date-fns/subDays'
 import enUS from 'date-fns/locale/en-US'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import './App.css'
@@ -90,6 +92,18 @@ function App() {
 
   const handleDateChange = (date) => {
     setSelectedDate(date)
+  }
+
+  const handlePreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1))
+  }
+
+  const handleNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1))
+  }
+
+  const handleToday = () => {
+    setSelectedDate(new Date())
   }
 
   const handleSelectSlot = (slotInfo) => {
@@ -184,6 +198,39 @@ function App() {
       </header>
       
       <div className="calendar-container">
+        {/* Calendar Header */}
+        <div className="calendar-header">
+          <button className="nav-arrow left" onClick={handlePreviousDay}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          <div className="date-navigation">
+            <div className="date-circle yesterday" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+              <span className="date-day">{format(subDays(selectedDate, 1), 'd')}</span>
+              <span className="date-month">{format(subDays(selectedDate, 1), 'MMM')}</span>
+            </div>
+            
+            <div className="date-circle current" onClick={handleToday}>
+              <span className="date-day">{format(selectedDate, 'd')}</span>
+              <span className="date-month">{format(selectedDate, 'MMM')}</span>
+              <span className="date-year">{format(selectedDate, 'yyyy')}</span>
+            </div>
+            
+            <div className="date-circle tomorrow" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+              <span className="date-day">{format(addDays(selectedDate, 1), 'd')}</span>
+              <span className="date-month">{format(addDays(selectedDate, 1), 'MMM')}</span>
+            </div>
+          </div>
+          
+          <button className="nav-arrow right" onClick={handleNextDay}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
         <Calendar
           localizer={localizer}
           events={events}
