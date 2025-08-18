@@ -16,6 +16,9 @@ from database.db import init_db, check_db_connection
 from middleware.error_handler import add_error_handlers
 from middleware.logger import setup_logging
 
+# Import API routes
+from routes import travels_router
+
 # Configure logging
 setup_logging()
 
@@ -75,6 +78,9 @@ app.add_middleware(
 
 # Add custom error handlers
 add_error_handlers(app)
+
+# Include API routes
+app.include_router(travels_router, prefix="/api")
 
 # Mount static files for uploads
 try:
