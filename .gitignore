@@ -10,6 +10,9 @@ dist/
 build/
 *.tsbuildinfo
 
+tasks_prompts/
+tasks_prompts/*.md
+
 # Environment variables
 .env
 .env.local
@@ -21,8 +24,15 @@ build/
 *.db
 *.sqlite
 *.sqlite3
-database/
 data/
+
+# Database data (keep schema and code files)
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+database/*.db-journal
+database/*.sqlite-journal
+database/*.sqlite3-journal
 
 # File uploads
 uploads/
