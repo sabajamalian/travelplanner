@@ -48,6 +48,17 @@ class TravelResponse(BaseModel):
     created_at: str
     updated_at: str
 
+class DeletedTravelResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: str
+    destination: Optional[str] = None
+    is_deleted: int
+    deleted_at: str
+    created_at: str
+
 class PaginationInfo(BaseModel):
     page: int
     limit: int
@@ -57,6 +68,11 @@ class PaginationInfo(BaseModel):
 class TravelListResponse(BaseModel):
     success: bool = True
     data: List[TravelResponse]
+    pagination: PaginationInfo
+
+class DeletedTravelListResponse(BaseModel):
+    success: bool = True
+    data: List[DeletedTravelResponse]
     pagination: PaginationInfo
 
 # Route: GET / - List all active travels
@@ -247,49 +263,182 @@ async def list_travels(
         )
 
 # Route: GET /deleted - List deleted travels
-@router.get("/deleted", response_model=List[Dict[str, Any]])
+@router.get("/deleted", response_model=DeletedTravelListResponse)
 async def list_deleted_travels(
     request: Request,
-    limit: Optional[int] = 100,
-    offset: Optional[int] = 0,
-    user_id: Optional[int] = None
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of deleted travels to return"),
+    offset: int = Query(0, ge=0, description="Number of deleted travels to skip"),
+    title: Optional[str] = Query(None, description="Filter by title (partial match)"),
+    destination: Optional[str] = Query(None, description="Filter by destination (partial match)"),
+    deleted_date_from: Optional[str] = Query(None, description="Filter by deletion date from (YYYY-MM-DD)"),
+    deleted_date_to: Optional[str] = Query(None, description="Filter by deletion date to (YYYY-MM-DD)")
 ):
     """
     List all deleted travels with optional filtering and pagination.
     
     Args:
         request: FastAPI request object
-        limit: Maximum number of deleted travels to return (default: 100)
+        limit: Maximum number of deleted travels to return (1-100, default: 10)
         offset: Number of deleted travels to skip (default: 0)
-        user_id: Filter deleted travels by user ID (optional)
+        title: Filter by title (partial match)
+        destination: Filter by destination (partial match)
+        deleted_date_from: Filter by deletion date from (YYYY-MM-DD)
+        deleted_date_to: Filter by deletion date to (YYYY-MM-DD)
     
     Returns:
-        List of deleted travels
+        Paginated list of deleted travels with soft delete metadata
     """
     try:
         # Log the request
-        logger.info(f"Listing deleted travels - limit: {limit}, offset: {offset}, user_id: {user_id}")
+        logger.info(f"Listing deleted travels - limit: {limit}, offset: {offset}, filters: title={title}, destination={destination}, deleted_date_from={deleted_date_from}, deleted_date_to={deleted_date_to}")
         
-        # TODO: Implement deleted travel listing logic
-        # This will be implemented in the next phase
+        # Validate date parameters
+        date_filters = {}
+        if deleted_date_from:
+            try:
+                datetime.strptime(deleted_date_from, "%Y-%m-%d")
+                date_filters["deleted_date_from"] = deleted_date_from
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid deleted_date_from format. Use YYYY-MM-DD"
+                )
         
-        # Placeholder response
+        if deleted_date_to:
+            try:
+                datetime.strptime(deleted_date_to, "%Y-MM-DD")
+                date_filters["deleted_date_to"] = deleted_date_to
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid deleted_date_to format. Use YYYY-MM-DD"
+                )
+        
+        # Build the WHERE clause for filtering
+        where_conditions = ["is_deleted = 1"]
+        query_params = []
+        
+        if title:
+            where_conditions.append("title LIKE ?")
+            query_params.append(f"%{title}%")
+        
+        if destination:
+            where_conditions.append("destination LIKE ?")
+            query_params.append(f"%{destination}%")
+        
+        if deleted_date_from:
+            where_conditions.append("date(deleted_at) >= ?")
+            query_params.append(deleted_date_from)
+        
+        if deleted_date_to:
+            where_conditions.append("date(deleted_at) <= ?")
+            query_params.append(deleted_date_to)
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # Get total count for pagination
+        count_query = f"SELECT COUNT(*) as total FROM travels WHERE {where_clause}"
+        count_result = fetch_one(count_query, tuple(query_params))
+        total_count = count_result["total"] if count_result else 0
+        
+        # Calculate pagination info
+        page = (offset // limit) + 1
+        total_pages = (total_count + limit - 1) // limit
+        
+        # Get deleted travels with pagination
+        travels_query = f"""
+            SELECT id, title, description, start_date, end_date, destination, 
+                   is_deleted, deleted_at, created_at
+            FROM travels 
+            WHERE {where_clause}
+            ORDER BY deleted_at DESC
+            LIMIT ? OFFSET ?
+        """
+        
+        # Add pagination parameters
+        query_params.extend([limit, offset])
+        
+        # Execute query
+        travels_data = fetch_all(travels_query, tuple(query_params))
+        
+        # Transform data to response format
         deleted_travels = []
+        for travel in travels_data:
+            deleted_travels.append(DeletedTravelResponse(
+                id=travel["id"],
+                title=travel["title"],
+                description=travel["description"],
+                start_date=travel["start_date"],
+                end_date=travel["end_date"],
+                destination=travel["destination"],
+                is_deleted=travel["is_deleted"],
+                deleted_at=travel["deleted_at"],
+                created_at=travel["created_at"]
+            ))
+        
+        # Create pagination info
+        pagination = PaginationInfo(
+            page=page,
+            limit=limit,
+            total=total_count,
+            pages=total_pages
+        )
+        
+        # Create response
+        response = DeletedTravelListResponse(
+            success=True,
+            data=deleted_travels,
+            pagination=pagination
+        )
         
         # Log the response
-        logger.info(f"Successfully listed {len(deleted_travels)} deleted travels")
+        logger.info(f"Successfully listed {len(deleted_travels)} deleted travels out of {total_count} total")
         
-        return deleted_travels
+        return response
         
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
-        log_error(e, request, {"endpoint": "list_deleted_travels", "limit": limit, "offset": offset, "user_id": user_id})
+        log_error(e, request, {
+            "endpoint": "list_deleted_travels", 
+            "limit": limit, 
+            "offset": offset, 
+            "title": title,
+            "destination": destination,
+            "deleted_date_from": deleted_date_from,
+            "deleted_date_to": deleted_date_to
+        })
         
         # Return error response
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list deleted travels"
         )
+
+# Health check endpoint for travels module
+@router.get("/health", include_in_schema=False)
+async def travels_health_check():
+    """
+    Health check endpoint for the travels module.
+    
+    Returns:
+        Health status of the travels module
+    """
+    return {
+        "status": "healthy",
+        "module": "travels",
+        "endpoints": [
+            "GET /",
+            "GET /deleted",
+            "POST /",
+            "GET /{id}",
+            "PUT /{id}",
+            "DELETE /{id}",
+            "POST /{id}/restore"
+        ]
+    }
 
 # Route: POST / - Create new travel
 @router.post("/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
@@ -545,25 +694,4 @@ async def restore_travel(
             detail="Failed to restore travel"
         )
 
-# Health check endpoint for travels module
-@router.get("/health", include_in_schema=False)
-async def travels_health_check():
-    """
-    Health check endpoint for the travels module.
-    
-    Returns:
-        Health status of the travels module
-    """
-    return {
-        "status": "healthy",
-        "module": "travels",
-        "endpoints": [
-            "GET /",
-            "GET /deleted",
-            "POST /",
-            "GET /{id}",
-            "PUT /{id}",
-            "DELETE /{id}",
-            "POST /{id}/restore"
-        ]
-    }
+
