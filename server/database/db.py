@@ -172,6 +172,22 @@ def execute_query(query: str, params: tuple = ()) -> int:
     """Execute INSERT/UPDATE/DELETE query"""
     return db_manager.execute_query(query, params)
 
+def execute_insert(query: str, params: tuple = ()) -> int:
+    """Execute INSERT query and return the ID of the inserted row"""
+    try:
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        conn.commit()
+        inserted_id = cursor.lastrowid
+        cursor.close()
+        logger.debug(f"Insert query executed: {query[:50]}... - ID: {inserted_id}")
+        return inserted_id
+    except Exception as e:
+        logger.error(f"Error executing insert query: {e}")
+        conn.rollback()
+        raise
+
 def fetch_one(query: str, params: tuple = ()) -> Optional[Dict[str, Any]]:
     """Fetch single row from SELECT query"""
     return db_manager.fetch_one(query, params)

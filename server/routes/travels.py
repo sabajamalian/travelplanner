@@ -12,7 +12,7 @@ from datetime import datetime, date
 from pydantic import BaseModel, Field
 
 # Import database connection
-from database.db import fetch_all, fetch_one, execute_query
+from database.db import fetch_all, fetch_one, execute_query, execute_insert
 
 # Import validation middleware
 from middleware.validation import validate_request_data, sanitize_input
@@ -74,6 +74,18 @@ class DeletedTravelListResponse(BaseModel):
     success: bool = True
     data: List[DeletedTravelResponse]
     pagination: PaginationInfo
+
+class CreateTravelRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255, description="Travel title")
+    description: Optional[str] = Field(None, max_length=1000, description="Travel description")
+    start_date: str = Field(..., description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(..., description="End date in YYYY-MM-DD format")
+    destination: Optional[str] = Field(None, max_length=255, description="Travel destination")
+
+class CreateTravelResponse(BaseModel):
+    success: bool = True
+    data: TravelResponse
+    message: str = "Travel created successfully"
 
 # Route: GET / - List all active travels
 @router.get("/", response_model=TravelListResponse)
@@ -441,51 +453,151 @@ async def travels_health_check():
     }
 
 # Route: POST / - Create new travel
-@router.post("/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CreateTravelResponse, status_code=status.HTTP_201_CREATED)
 async def create_travel(
     request: Request,
-    travel_data: Dict[str, Any]
+    travel_data: CreateTravelRequest
 ):
     """
     Create a new travel.
     
     Args:
         request: FastAPI request object
-        travel_data: Travel data from request body
+        travel_data: Validated travel data from request body
     
     Returns:
-        Created travel information
+        Created travel information with success message
+    
+    Raises:
+        HTTPException: For validation errors or database failures
     """
     try:
         # Log the request
-        logger.info(f"Creating new travel - data: {travel_data}")
+        logger.info(f"Creating new travel - data: {travel_data.dict()}")
         
-        # TODO: Implement travel creation logic
-        # This will be implemented in the next phase
+        # Validate and parse dates
+        try:
+            start_date = datetime.strptime(travel_data.start_date, "%Y-%m-%d").date()
+            end_date = datetime.strptime(travel_data.end_date, "%Y-%m-%d").date()
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid date format. Use YYYY-MM-DD format. Error: {str(e)}"
+            )
         
-        # Placeholder response
-        created_travel = {
-            "id": 1,
-            "title": travel_data.get("title", ""),
-            "description": travel_data.get("description", ""),
-            "start_date": travel_data.get("start_date"),
-            "end_date": travel_data.get("end_date"),
-            "user_id": travel_data.get("user_id"),
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
+        # Validate date logic
+        if start_date >= end_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="start_date must be before end_date"
+            )
+        
+        # Check if start_date is not in the past (optional business rule)
+        today = date.today()
+        if start_date < today:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="start_date cannot be in the past"
+            )
+        
+        # Sanitize input data
+        sanitized_title = sanitize_input(travel_data.title) if travel_data.title else ""
+        sanitized_description = sanitize_input(travel_data.description) if travel_data.description else None
+        sanitized_destination = sanitize_input(travel_data.destination) if travel_data.destination else None
+        
+        # Validate sanitized data
+        if not sanitized_title.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Title cannot be empty after sanitization"
+            )
+        
+        # Prepare data for database insertion
+        insert_data = {
+            "title": sanitized_title,
+            "description": sanitized_description,
+            "start_date": travel_data.start_date,
+            "end_date": travel_data.end_date,
+            "destination": sanitized_destination,
+            "is_deleted": 0,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
         }
         
+        # Insert into database
+        insert_query = """
+            INSERT INTO travels (title, description, start_date, end_date, destination, is_deleted, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        
+        insert_params = (
+            insert_data["title"],
+            insert_data["description"],
+            insert_data["start_date"],
+            insert_data["end_date"],
+            insert_data["destination"],
+            insert_data["is_deleted"],
+            insert_data["created_at"],
+            insert_data["updated_at"]
+        )
+        
+        # Execute insert query
+        travel_id = execute_insert(insert_query, insert_params)
+        
+        if not travel_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create travel - no ID returned"
+            )
+        
+        # Fetch the created travel to return
+        fetch_query = """
+            SELECT id, title, description, start_date, end_date, destination, created_at, updated_at
+            FROM travels 
+            WHERE id = ?
+        """
+        
+        created_travel_data = fetch_one(fetch_query, (travel_id,))
+        
+        if not created_travel_data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch created travel"
+            )
+        
+        # Create response object
+        created_travel = TravelResponse(
+            id=created_travel_data["id"],
+            title=created_travel_data["title"],
+            description=created_travel_data["description"],
+            start_date=created_travel_data["start_date"],
+            end_date=created_travel_data["end_date"],
+            destination=created_travel_data["destination"],
+            created_at=created_travel_data["created_at"],
+            updated_at=created_travel_data["updated_at"]
+        )
+        
         # Log the business event
-        log_business_event("travel_created", "travel", str(created_travel["id"]), travel_data)
+        log_business_event("travel_created", "travel", str(travel_id), travel_data.dict())
         
         # Log the response
-        logger.info(f"Successfully created travel with ID: {created_travel['id']}")
+        logger.info(f"Successfully created travel with ID: {travel_id}")
         
-        return created_travel
+        # Create and return response
+        response = CreateTravelResponse(
+            success=True,
+            data=created_travel,
+            message="Travel created successfully"
+        )
         
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
-        log_error(e, request, {"endpoint": "create_travel", "travel_data": travel_data})
+        log_error(e, request, {"endpoint": "create_travel", "travel_data": travel_data.dict() if hasattr(travel_data, 'dict') else str(travel_data)})
         
         # Return error response
         raise HTTPException(
