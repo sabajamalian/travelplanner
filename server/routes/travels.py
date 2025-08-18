@@ -87,6 +87,43 @@ class CreateTravelResponse(BaseModel):
     data: TravelResponse
     message: str = "Travel created successfully"
 
+class SingleTravelResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: str
+    destination: Optional[str] = None
+    events_count: int = 0
+    created_at: str
+    updated_at: str
+
+class GetTravelResponse(BaseModel):
+    success: bool = True
+    data: SingleTravelResponse
+
+class UpdateTravelRequest(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=255, description="Travel title")
+    description: Optional[str] = Field(None, max_length=1000, description="Travel description")
+    start_date: Optional[str] = Field(None, description="Start date in YYYY-MM-DD format")
+    end_date: Optional[str] = Field(None, description="End date in YYYY-MM-DD format")
+    destination: Optional[str] = Field(None, max_length=255, description="Travel destination")
+
+class UpdateTravelResponse(BaseModel):
+    success: bool = True
+    data: TravelResponse
+    message: str = "Travel updated successfully"
+
+class SoftDeleteResponse(BaseModel):
+    success: bool = True
+    message: str = "Travel soft deleted successfully"
+    deletedAt: str
+
+class RestoreTravelResponse(BaseModel):
+    success: bool = True
+    data: TravelResponse
+    message: str = "Travel restored successfully"
+
 # Route: GET / - List all active travels
 @router.get("/", response_model=TravelListResponse)
 async def list_travels(
@@ -606,7 +643,7 @@ async def create_travel(
         )
 
 # Route: GET /:id - Get single travel
-@router.get("/{travel_id}", response_model=Dict[str, Any])
+@router.get("/{travel_id}", response_model=GetTravelResponse)
 async def get_travel(
     request: Request,
     travel_id: int
@@ -619,32 +656,83 @@ async def get_travel(
         travel_id: ID of the travel to retrieve
     
     Returns:
-        Travel information
+        Travel information with events count
+    
+    Raises:
+        HTTPException: For validation errors, not found, or database failures
     """
     try:
         # Log the request
         logger.info(f"Getting travel with ID: {travel_id}")
         
-        # TODO: Implement travel retrieval logic
-        # This will be implemented in the next phase
+        # Validate travel_id parameter
+        if travel_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Travel ID must be a positive integer"
+            )
         
-        # Placeholder response
-        travel = {
-            "id": travel_id,
-            "title": "Sample Travel",
-            "description": "Sample description",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-07",
-            "user_id": 1,
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
+        # Query database for travel
+        travel_query = """
+            SELECT id, title, description, start_date, end_date, destination, 
+                   is_deleted, created_at, updated_at
+            FROM travels 
+            WHERE id = ?
+        """
+        
+        travel_data = fetch_one(travel_query, (travel_id,))
+        
+        # Check if travel exists
+        if not travel_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Travel with ID {travel_id} not found"
+            )
+        
+        # Check if travel is soft deleted
+        if travel_data["is_deleted"] == 1:
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail=f"Travel with ID {travel_id} has been deleted"
+            )
+        
+        # Get events count for this travel
+        events_count_query = """
+            SELECT COUNT(*) as count
+            FROM events 
+            WHERE travel_id = ? AND is_deleted = 0
+        """
+        
+        events_count_result = fetch_one(events_count_query, (travel_id,))
+        events_count = events_count_result["count"] if events_count_result else 0
+        
+        # Create response object
+        travel = SingleTravelResponse(
+            id=travel_data["id"],
+            title=travel_data["title"],
+            description=travel_data["description"],
+            start_date=travel_data["start_date"],
+            end_date=travel_data["end_date"],
+            destination=travel_data["destination"],
+            events_count=events_count,
+            created_at=travel_data["created_at"],
+            updated_at=travel_data["updated_at"]
+        )
         
         # Log the response
-        logger.info(f"Successfully retrieved travel with ID: {travel_id}")
+        logger.info(f"Successfully retrieved travel with ID: {travel_id}, events count: {events_count}")
         
-        return travel
+        # Create and return response
+        response = GetTravelResponse(
+            success=True,
+            data=travel
+        )
         
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
         log_error(e, request, {"endpoint": "get_travel", "travel_id": travel_id})
@@ -656,11 +744,11 @@ async def get_travel(
         )
 
 # Route: PUT /:id - Update travel
-@router.put("/{travel_id}", response_model=Dict[str, Any])
+@router.put("/{travel_id}", response_model=UpdateTravelResponse)
 async def update_travel(
     request: Request,
     travel_id: int,
-    travel_data: Dict[str, Any]
+    travel_data: UpdateTravelRequest
 ):
     """
     Update an existing travel.
@@ -668,41 +756,195 @@ async def update_travel(
     Args:
         request: FastAPI request object
         travel_id: ID of the travel to update
-        travel_data: Updated travel data from request body
+        travel_data: Validated travel update data from request body
     
     Returns:
-        Updated travel information
+        Updated travel information with success message
+    
+    Raises:
+        HTTPException: For validation errors, not found, or database failures
     """
     try:
         # Log the request
-        logger.info(f"Updating travel with ID: {travel_id} - data: {travel_data}")
+        logger.info(f"Updating travel with ID: {travel_id} - data: {travel_data.dict(exclude_unset=True)}")
         
-        # TODO: Implement travel update logic
-        # This will be implemented in the next phase
+        # Validate travel_id parameter
+        if travel_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Travel ID must be a positive integer"
+            )
         
-        # Placeholder response
-        updated_travel = {
-            "id": travel_id,
-            "title": travel_data.get("title", "Updated Title"),
-            "description": travel_data.get("description", "Updated description"),
-            "start_date": travel_data.get("start_date"),
-            "end_date": travel_data.get("end_date"),
-            "user_id": travel_data.get("user_id", 1),
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
+        # Check if travel exists and is not deleted
+        travel_query = """
+            SELECT id, title, description, start_date, end_date, destination, 
+                   is_deleted, created_at, updated_at
+            FROM travels 
+            WHERE id = ?
+        """
+        
+        existing_travel = fetch_one(travel_query, (travel_id,))
+        
+        if not existing_travel:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Travel with ID {travel_id} not found"
+            )
+        
+        if existing_travel["is_deleted"] == 1:
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail=f"Travel with ID {travel_id} has been deleted"
+            )
+        
+        # Prepare update data - only include fields that were provided
+        update_fields = []
+        update_params = []
+        
+        # Handle title update
+        if travel_data.title is not None:
+            sanitized_title = sanitize_input(travel_data.title)
+            if not sanitized_title.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Title cannot be empty after sanitization"
+                )
+            update_fields.append("title = ?")
+            update_params.append(sanitized_title)
+        
+        # Handle description update
+        if travel_data.description is not None:
+            sanitized_description = sanitize_input(travel_data.description)
+            update_fields.append("description = ?")
+            update_params.append(sanitized_description)
+        
+        # Handle start_date update
+        if travel_data.start_date is not None:
+            try:
+                start_date = datetime.strptime(travel_data.start_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid start_date format. Use YYYY-MM-DD format"
+                )
+            update_fields.append("start_date = ?")
+            update_params.append(travel_data.start_date)
+        
+        # Handle end_date update
+        if travel_data.end_date is not None:
+            try:
+                end_date = datetime.strptime(travel_data.end_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid end_date format. Use YYYY-MM-DD format"
+                )
+            update_fields.append("end_date = ?")
+            update_params.append(travel_data.end_date)
+        
+        # Handle destination update
+        if travel_data.destination is not None:
+            sanitized_destination = sanitize_input(travel_data.destination)
+            update_fields.append("destination = ?")
+            update_params.append(sanitized_destination)
+        
+        # Check if any fields were provided for update
+        if not update_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid fields provided for update"
+            )
+        
+        # Validate date logic if both dates are being updated
+        if travel_data.start_date is not None and travel_data.end_date is not None:
+            if start_date >= end_date:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="start_date must be before end_date"
+                )
+        # Validate date logic if only one date is being updated
+        elif travel_data.start_date is not None:
+            # Check against existing end_date
+            existing_end_date = datetime.strptime(existing_travel["end_date"], "%Y-%m-%d").date()
+            if start_date >= existing_end_date:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="start_date must be before existing end_date"
+                )
+        elif travel_data.end_date is not None:
+            # Check against existing start_date
+            existing_start_date = datetime.strptime(existing_travel["start_date"], "%Y-%m-%d").date()
+            if existing_start_date >= end_date:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="existing start_date must be before end_date"
+                )
+        
+        # Add updated_at timestamp
+        update_fields.append("updated_at = ?")
+        update_params.append(datetime.now().isoformat())
+        
+        # Add travel_id to params for WHERE clause
+        update_params.append(travel_id)
+        
+        # Build and execute update query
+        update_query = f"""
+            UPDATE travels 
+            SET {', '.join(update_fields)}
+            WHERE id = ?
+        """
+        
+        # Execute update query
+        affected_rows = execute_query(update_query, tuple(update_params))
+        
+        if affected_rows == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update travel - no rows affected"
+            )
+        
+        # Fetch the updated travel
+        updated_travel_data = fetch_one(travel_query, (travel_id,))
+        
+        if not updated_travel_data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch updated travel"
+            )
+        
+        # Create response object
+        updated_travel = TravelResponse(
+            id=updated_travel_data["id"],
+            title=updated_travel_data["title"],
+            description=updated_travel_data["description"],
+            start_date=updated_travel_data["start_date"],
+            end_date=updated_travel_data["end_date"],
+            destination=updated_travel_data["destination"],
+            created_at=updated_travel_data["created_at"],
+            updated_at=updated_travel_data["updated_at"]
+        )
         
         # Log the business event
-        log_business_event("travel_updated", "travel", str(travel_id), travel_data)
+        log_business_event("travel_updated", "travel", str(travel_id), travel_data.dict(exclude_unset=True))
         
         # Log the response
         logger.info(f"Successfully updated travel with ID: {travel_id}")
         
-        return updated_travel
+        # Create and return response
+        response = UpdateTravelResponse(
+            success=True,
+            data=updated_travel,
+            message="Travel updated successfully"
+        )
         
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
-        log_error(e, request, {"endpoint": "update_travel", "travel_id": travel_id, "travel_data": travel_data})
+        log_error(e, request, {"endpoint": "update_travel", "travel_id": travel_id, "travel_data": travel_data.dict(exclude_unset=True) if hasattr(travel_data, 'dict') else str(travel_data)})
         
         # Return error response
         raise HTTPException(
@@ -711,7 +953,7 @@ async def update_travel(
         )
 
 # Route: DELETE /:id - Soft delete travel
-@router.delete("/{travel_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{travel_id}", response_model=SoftDeleteResponse)
 async def delete_travel(
     request: Request,
     travel_id: int
@@ -724,24 +966,87 @@ async def delete_travel(
         travel_id: ID of the travel to delete
     
     Returns:
-        No content (204 status)
+        Success message with deletion timestamp
+    
+    Raises:
+        HTTPException: For validation errors, not found, or database failures
     """
     try:
         # Log the request
         logger.info(f"Soft deleting travel with ID: {travel_id}")
         
-        # TODO: Implement travel soft delete logic
-        # This will be implemented in the next phase
+        # Validate travel_id parameter
+        if travel_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Travel ID must be a positive integer"
+            )
+        
+        # Check if travel exists and is not already deleted
+        travel_query = """
+            SELECT id, title, is_deleted
+            FROM travels 
+            WHERE id = ?
+        """
+        
+        existing_travel = fetch_one(travel_query, (travel_id,))
+        
+        if not existing_travel:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Travel with ID {travel_id} not found"
+            )
+        
+        if existing_travel["is_deleted"] == 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Travel with ID {travel_id} is already deleted"
+            )
+        
+        # Get current timestamp for deletion
+        current_timestamp = datetime.now().isoformat()
+        
+        # Soft delete the travel
+        delete_query = """
+            UPDATE travels 
+            SET is_deleted = 1, 
+                deleted_at = ?, 
+                updated_at = ?
+            WHERE id = ?
+        """
+        
+        delete_params = (current_timestamp, current_timestamp, travel_id)
+        
+        # Execute soft delete query
+        affected_rows = execute_query(delete_query, delete_params)
+        
+        if affected_rows == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to soft delete travel - no rows affected"
+            )
         
         # Log the business event
-        log_business_event("travel_deleted", "travel", str(travel_id), {})
+        log_business_event("travel_deleted", "travel", str(travel_id), {
+            "deleted_at": current_timestamp,
+            "title": existing_travel["title"]
+        })
         
         # Log the response
-        logger.info(f"Successfully soft deleted travel with ID: {travel_id}")
+        logger.info(f"Successfully soft deleted travel with ID: {travel_id} at {current_timestamp}")
         
-        # Return 204 No Content
-        return None
+        # Create and return response
+        response = SoftDeleteResponse(
+            success=True,
+            message="Travel soft deleted successfully",
+            deletedAt=current_timestamp
+        )
         
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
         log_error(e, request, {"endpoint": "delete_travel", "travel_id": travel_id})
@@ -753,7 +1058,7 @@ async def delete_travel(
         )
 
 # Route: POST /:id/restore - Restore deleted travel
-@router.post("/{travel_id}/restore", response_model=Dict[str, Any])
+@router.post("/{travel_id}/restore", response_model=RestoreTravelResponse)
 async def restore_travel(
     request: Request,
     travel_id: int
@@ -766,36 +1071,109 @@ async def restore_travel(
         travel_id: ID of the travel to restore
     
     Returns:
-        Restored travel information
+        Restored travel information with success message
+    
+    Raises:
+        HTTPException: For validation errors, not found, or database failures
     """
     try:
         # Log the request
         logger.info(f"Restoring travel with ID: {travel_id}")
         
-        # TODO: Implement travel restore logic
-        # This will be implemented in the next phase
+        # Validate travel_id parameter
+        if travel_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Travel ID must be a positive integer"
+            )
         
-        # Placeholder response
-        restored_travel = {
-            "id": travel_id,
-            "title": "Restored Travel",
-            "description": "Restored description",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-07",
-            "user_id": 1,
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z",
-            "deleted_at": None
-        }
+        # Check if travel exists and is deleted
+        travel_query = """
+            SELECT id, title, description, start_date, end_date, destination, 
+                   is_deleted, created_at, updated_at
+            FROM travels 
+            WHERE id = ?
+        """
+        
+        existing_travel = fetch_one(travel_query, (travel_id,))
+        
+        if not existing_travel:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Travel with ID {travel_id} not found"
+            )
+        
+        if existing_travel["is_deleted"] == 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Travel with ID {travel_id} is not deleted"
+            )
+        
+        # Get current timestamp for restoration
+        current_timestamp = datetime.now().isoformat()
+        
+        # Restore the travel
+        restore_query = """
+            UPDATE travels 
+            SET is_deleted = 0, 
+                deleted_at = NULL, 
+                updated_at = ?
+            WHERE id = ?
+        """
+        
+        restore_params = (current_timestamp, travel_id)
+        
+        # Execute restore query
+        affected_rows = execute_query(restore_query, restore_params)
+        
+        if affected_rows == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to restore travel - no rows affected"
+            )
+        
+        # Fetch the restored travel
+        restored_travel_data = fetch_one(travel_query, (travel_id,))
+        
+        if not restored_travel_data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch restored travel"
+            )
+        
+        # Create response object
+        restored_travel = TravelResponse(
+            id=restored_travel_data["id"],
+            title=restored_travel_data["title"],
+            description=restored_travel_data["description"],
+            start_date=restored_travel_data["start_date"],
+            end_date=restored_travel_data["end_date"],
+            destination=restored_travel_data["destination"],
+            created_at=restored_travel_data["created_at"],
+            updated_at=restored_travel_data["updated_at"]
+        )
         
         # Log the business event
-        log_business_event("travel_restored", "travel", str(travel_id), {})
+        log_business_event("travel_restored", "travel", str(travel_id), {
+            "restored_at": current_timestamp,
+            "title": existing_travel["title"]
+        })
         
         # Log the response
-        logger.info(f"Successfully restored travel with ID: {travel_id}")
+        logger.info(f"Successfully restored travel with ID: {travel_id} at {current_timestamp}")
         
-        return restored_travel
+        # Create and return response
+        response = RestoreTravelResponse(
+            success=True,
+            data=restored_travel,
+            message="Travel restored successfully"
+        )
         
+        return response
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         # Log the error
         log_error(e, request, {"endpoint": "restore_travel", "travel_id": travel_id})
