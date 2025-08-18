@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Calendar Integration Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Travels Loading</h3>
+        <button onclick="testLoadTravels()">Load Travels</button>
+        <div id="travels-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Event Types Loading</h3>
+        <button onclick="testLoadEventTypes()">Load Event Types</button>
+        <div id="event-types-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Events Loading</h3>
+        <select id="travel-select">
+            <option value="">Select a travel...</option>
+        </select>
+        <button onclick="testLoadEvents()">Load Events</button>
+        <div id="events-result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        async function makeRequest(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API request failed:', error);
+                throw error;
+            }
+        }
+
+        async function testLoadTravels() {
+            const resultDiv = document.getElementById('travels-result');
+            resultDiv.innerHTML = '<p>Loading travels...</p>';
+            
+            try {
+                const response = await makeRequest('/travels/');
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Travels loaded successfully!</p>
+                    <p>Found ${response.data.length} travels:</p>
+                    <ul>
+                        ${response.data.map(travel => 
+                            `<li>${travel.title} (${travel.destination}) - ID: ${travel.id}</li>`
+                        ).join('')}
+                    </ul>
+                    <button onclick="populateTravelSelect(${JSON.stringify(response.data)})">Populate Travel Select</button>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error loading travels: ${error.message}</p>`;
+            }
+        }
+
+        async function testLoadEventTypes() {
+            const resultDiv = document.getElementById('event-types-result');
+            resultDiv.innerHTML = '<p>Loading event types...</p>';
+            
+            try {
+                const response = await makeRequest('/event-types/');
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Event types loaded successfully!</p>
+                    <p>Found ${response.data.length} event types:</p>
+                    <ul>
+                        ${response.data.map(type => 
+                            `<li>${type.name} (${type.category}) - ID: ${type.id}</li>`
+                        ).join('')}
+                    </ul>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error loading event types: ${error.message}</p>`;
+            }
+        }
+
+        async function testLoadEvents() {
+            const travelSelect = document.getElementById('travel-select');
+            const travelId = travelSelect.value;
+            
+            if (!travelId) {
+                alert('Please select a travel first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('events-result');
+            resultDiv.innerHTML = '<p>Loading events...</p>';
+            
+            try {
+                const response = await makeRequest(`/events/travels/${travelId}/events`);
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Events loaded successfully!</p>
+                    <p>Found ${response.data.length} events for travel ${travelId}:</p>
+                    <ul>
+                        ${response.data.map(event => 
+                            `<li>${event.title} at ${event.start_datetime} (Type: ${event.event_type_id})</li>`
+                        ).join('')}
+                    </ul>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error loading events: ${error.message}</p>`;
+            }
+        }
+
+        function populateTravelSelect(travels) {
+            const travelSelect = document.getElementById('travel-select');
+            travelSelect.innerHTML = '<option value="">Select a travel...</option>';
+            
+            travels.forEach(travel => {
+                const option = document.createElement('option');
+                option.value = travel.id;
+                option.textContent = `${travel.title} (${travel.destination})`;
+                travelSelect.appendChild(option);
+            });
+        }
+    </script>
+</body>
+</html>

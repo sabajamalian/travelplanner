@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -9,6 +9,7 @@ import subDays from 'date-fns/subDays';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './styles/App.css';
+import { useCalendarEvents } from './hooks/useCalendarEvents';
 
 const locales = {
   'en-US': enUS,
@@ -22,73 +23,44 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// Test events for demonstration
-const testEvents = [
-  {
-    id: 1,
-    title: 'Morning Coffee & Planning',
-    start: new Date(2024, 0, 15, 8, 0), // January 15, 2024 at 8:00 AM
-    end: new Date(2024, 0, 15, 9, 0), // January 15, 2024 at 9:00 AM
-    resource: 'Hotel Lobby',
-    type: 'Planning',
-  },
-  {
-    id: 2,
-    title: 'City Walking Tour',
-    start: new Date(2024, 0, 15, 9, 30),
-    end: new Date(2024, 0, 15, 12, 0),
-    resource: 'City Center',
-    type: 'Sightseeing',
-  },
-  {
-    id: 3,
-    title: 'Lunch at Local Restaurant',
-    start: new Date(2024, 0, 15, 12, 0),
-    end: new Date(2024, 0, 15, 13, 30),
-    resource: 'Downtown Area',
-    type: 'Food',
-  },
-  {
-    id: 4,
-    title: 'Museum Visit',
-    start: new Date(2024, 0, 15, 14, 0),
-    end: new Date(2024, 0, 15, 16, 0),
-    resource: 'National Museum',
-    type: 'Culture',
-  },
-  {
-    id: 5,
-    title: 'Shopping & Souvenirs',
-    start: new Date(2024, 0, 15, 16, 30),
-    end: new Date(2024, 0, 15, 18, 0),
-    resource: 'Market District',
-    type: 'Shopping',
-  },
-  {
-    id: 6,
-    title: 'Dinner Reservation',
-    start: new Date(2024, 0, 15, 19, 0),
-    end: new Date(2024, 0, 15, 21, 0),
-    resource: 'Fine Dining Restaurant',
-    type: 'Food',
-  },
-  {
-    id: 7,
-    title: 'Evening Entertainment',
-    start: new Date(2024, 0, 15, 21, 30),
-    end: new Date(2024, 0, 15, 23, 0),
-    resource: 'Theater District',
-    type: 'Entertainment',
-  },
+// Default event types for fallback
+const defaultEventTypes = [
+  { name: 'Planning', color: '#28a745' },
+  { name: 'Sightseeing', color: '#17a2b8' },
+  { name: 'Food', color: '#ffc107' },
+  { name: 'Culture', color: '#6f42c1' },
+  { name: 'Shopping', color: '#fd7e14' },
+  { name: 'Entertainment', color: '#e83e8c' },
 ];
 
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date(2024, 0, 15));
-  const [events, setEvents] = useState(testEvents);
+  const [selectedTravelId, setSelectedTravelId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Use the custom hook for calendar events management
+  const {
+    events,
+    eventTypes,
+    travels,
+    isLoadingEvents,
+    isLoadingEventTypes,
+    isLoadingTravels,
+    isCreatingEvent,
+    isUpdatingEvent,
+    isDeletingEvent,
+    eventsError,
+    eventTypesError,
+    travelsError,
+    operationError,
+    createNewEvent,
+    updateExistingEvent,
+    deleteExistingEvent,
+    clearOperationError,
+  } = useCalendarEvents(selectedTravelId);
 
   const handleDateChange = date => {
     setSelectedDate(date);
@@ -127,29 +99,33 @@ function App() {
     setIsEditing(false);
   };
 
-  const handleSaveEvent = eventData => {
-    if (isEditing && selectedEvent) {
-      // Update existing event
-      setEvents(
-        events.map(event =>
-          event.id === selectedEvent.id ? { ...event, ...eventData } : event
-        )
-      );
-    } else {
-      // Create new event
-      const newEvent = {
-        id: Date.now(),
-        ...eventData,
-      };
-      setEvents([...events, newEvent]);
+  const handleSaveEvent = async (eventData) => {
+    try {
+      if (isEditing && selectedEvent) {
+        // Update existing event
+        await updateExistingEvent(selectedEvent.id, eventData);
+      } else {
+        // Create new event
+        await createNewEvent(eventData);
+      }
+      handleCloseModal();
+      clearOperationError();
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      // Error is already set in the hook, just keep modal open
     }
-    handleCloseModal();
   };
 
-  const handleDeleteEvent = () => {
+  const handleDeleteEvent = async () => {
     if (selectedEvent) {
-      setEvents(events.filter(event => event.id !== selectedEvent.id));
-      handleCloseModal();
+      try {
+        await deleteExistingEvent(selectedEvent.id);
+        handleCloseModal();
+        clearOperationError();
+      } catch (error) {
+        console.error('Failed to delete event:', error);
+        // Error is already set in the hook, just keep modal open
+      }
     }
   };
 
@@ -196,12 +172,57 @@ function App() {
       <header className='app-header'>
         <h1>Travel Planner - Daily Schedule</h1>
         <p>Plan your perfect day with our interactive calendar</p>
-        <p className='instructions'>
-          💡 Click on any time slot to create a new event!
-        </p>
+        
+        {/* Travel Selection */}
+        <div className='travel-selector'>
+          <label htmlFor='travel-select'>Select Travel:</label>
+          <select
+            id='travel-select'
+            value={selectedTravelId || ''}
+            onChange={(e) => setSelectedTravelId(e.target.value ? parseInt(e.target.value) : null)}
+            disabled={isLoadingTravels}
+          >
+            <option value=''>-- Select a Travel --</option>
+            {travels.map(travel => (
+              <option key={travel.id} value={travel.id}>
+                {travel.title} ({travel.destination})
+              </option>
+            ))}
+          </select>
+          {isLoadingTravels && <span className='loading-indicator'>Loading travels...</span>}
+          {travelsError && <span className='error-message'>Error loading travels: {travelsError}</span>}
+        </div>
+
+        {selectedTravelId && (
+          <p className='instructions'>
+            💡 Click on any time slot to create a new event!
+          </p>
+        )}
+        
+        {!selectedTravelId && (
+          <p className='instructions'>
+            📍 Please select a travel to view and manage events
+          </p>
+        )}
       </header>
 
       <div className='calendar-container'>
+        {/* Loading and Error States */}
+        {isLoadingEvents && (
+          <div className='loading-overlay'>
+            <div className='loading-spinner'>Loading events...</div>
+          </div>
+        )}
+        
+        {eventsError && (
+          <div className='error-overlay'>
+            <div className='error-message'>
+              Error loading events: {eventsError}
+              <button onClick={() => window.location.reload()}>Retry</button>
+            </div>
+          </div>
+        )}
+
         {/* Calendar Header */}
         <div className='calendar-header'>
           <button className='nav-arrow left' onClick={handlePreviousDay}>
@@ -273,28 +294,37 @@ function App() {
           </button>
         </div>
 
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor='start'
-          endAccessor='end'
-          style={{ height: 600 }}
-          views={['day']}
-          view='day'
-          date={selectedDate}
-          onNavigate={handleDateChange}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectEvent}
-          selectable
-          eventPropGetter={eventStyleGetter}
-          step={60}
-          timeslots={1}
-          min={new Date(2024, 0, 15, 6, 0)} // 6:00 AM
-          max={new Date(2024, 0, 15, 23, 59)} // 11:59 PM
-          toolbar={false}
-          showMultiDayTimes={false}
-          dayLayoutAlgorithm='no-overlap'
-        />
+        {selectedTravelId ? (
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor='start'
+            endAccessor='end'
+            style={{ height: 600 }}
+            views={['day']}
+            view='day'
+            date={selectedDate}
+            onNavigate={handleDateChange}
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            selectable
+            eventPropGetter={eventStyleGetter}
+            step={60}
+            timeslots={1}
+            min={new Date(2024, 0, 15, 6, 0)} // 6:00 AM
+            max={new Date(2024, 0, 15, 23, 59)} // 11:59 PM
+            toolbar={false}
+            showMultiDayTimes={false}
+            dayLayoutAlgorithm='no-overlap'
+          />
+        ) : (
+          <div className='no-travel-selected'>
+            <div className='no-travel-message'>
+              <h3>No Travel Selected</h3>
+              <p>Please select a travel from the dropdown above to view and manage events.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className='legend'>
@@ -336,6 +366,8 @@ function App() {
           onClose={handleCloseModal}
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
+          isLoading={isCreatingEvent || isUpdatingEvent || isDeletingEvent}
+          error={operationError}
         />
       )}
     </div>
@@ -343,7 +375,7 @@ function App() {
 }
 
 // Event Modal Component
-function EventModal({ slot, event, isEditing, onClose, onSave, onDelete }) {
+function EventModal({ slot, event, isEditing, onClose, onSave, onDelete, isLoading, error }) {
   const [formData, setFormData] = useState({
     title: event?.title || '',
     type: event?.type || 'Planning',
@@ -385,6 +417,13 @@ function EventModal({ slot, event, isEditing, onClose, onSave, onDelete }) {
             &times;
           </button>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className='error-message modal-error'>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className='form-group'>
@@ -456,21 +495,25 @@ function EventModal({ slot, event, isEditing, onClose, onSave, onDelete }) {
             </div>
           </div>
 
-          <div className='modal-actions'>
+                    <div className='modal-actions'>
             {isEditing && (
               <button
                 type='button'
                 className='delete-button'
                 onClick={onDelete}
+                disabled={isLoading}
               >
-                Delete Event
+                {isLoading ? 'Deleting...' : 'Delete Event'}
               </button>
             )}
-            <button type='button' className='cancel-button' onClick={onClose}>
+            <button type='button' className='cancel-button' onClick={onClose} disabled={isLoading}>
               Cancel
             </button>
-            <button type='submit' className='save-button'>
-              {isEditing ? 'Update Event' : 'Create Event'}
+            <button type='submit' className='save-button' disabled={isLoading}>
+              {isLoading 
+                ? (isEditing ? 'Updating...' : 'Creating...') 
+                : (isEditing ? 'Update Event' : 'Create Event')
+              }
             </button>
           </div>
         </form>
