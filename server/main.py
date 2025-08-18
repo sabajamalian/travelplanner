@@ -18,6 +18,7 @@ from middleware.logger import setup_logging
 
 # Import API routes
 from routes import travels_router
+from routes.events import router as events_router
 
 # Configure logging
 setup_logging()
@@ -81,6 +82,7 @@ add_error_handlers(app)
 
 # Include API routes
 app.include_router(travels_router, prefix="/api")
+app.include_router(events_router, prefix="/api")
 
 # Mount static files for uploads
 try:
