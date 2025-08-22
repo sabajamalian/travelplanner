@@ -309,24 +309,24 @@
   display: inline-block;
 }
 
-.legend-color.planning {
+.legend-color.accommodation {
   background-color: #28a745;
 }
 
-.legend-color.sightseeing {
+.legend-color.transportation {
   background-color: #17a2b8;
 }
 
-.legend-color.food {
+.legend-color.activity {
   background-color: #ffc107;
 }
 
-.legend-color.culture {
-  background-color: #6f42c1;
+.legend-color.food {
+  background-color: #fd7e14;
 }
 
 .legend-color.shopping {
-  background-color: #fd7e14;
+  background-color: #6f42c1;
 }
 
 .legend-color.entertainment {

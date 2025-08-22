@@ -66,11 +66,13 @@ export const useCalendarEvents = (selectedTravelId) => {
     setEventsError(null);
 
     try {
+      console.log('Loading events for travel ID:', travelId);
       const eventsData = await loadEvents(travelId);
+      console.log('Events loaded:', eventsData);
       setEvents(eventsData);
     } catch (error) {
-      setEventsError(error.message);
       console.error('Failed to load events:', error);
+      setEventsError(error.message);
     } finally {
       setIsLoadingEvents(false);
     }

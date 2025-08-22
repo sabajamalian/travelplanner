@@ -25,11 +25,11 @@ const localizer = dateFnsLocalizer({
 
 // Default event types for fallback
 const defaultEventTypes = [
-  { name: 'Planning', color: '#28a745' },
-  { name: 'Sightseeing', color: '#17a2b8' },
-  { name: 'Food', color: '#ffc107' },
-  { name: 'Culture', color: '#6f42c1' },
-  { name: 'Shopping', color: '#fd7e14' },
+  { name: 'Accommodation', color: '#28a745' },
+  { name: 'Transportation', color: '#17a2b8' },
+  { name: 'Activity', color: '#ffc107' },
+  { name: 'Food', color: '#fd7e14' },
+  { name: 'Shopping', color: '#6f42c1' },
   { name: 'Entertainment', color: '#e83e8c' },
 ];
 
@@ -242,20 +242,20 @@ function App() {
     let backgroundColor = '#3174ad';
 
     switch (event.type) {
-      case 'Planning':
+      case 'Accommodation':
         backgroundColor = '#28a745';
         break;
-      case 'Sightseeing':
+      case 'Transportation':
         backgroundColor = '#17a2b8';
         break;
-      case 'Food':
+      case 'Activity':
         backgroundColor = '#ffc107';
         break;
-      case 'Culture':
-        backgroundColor = '#6f42c1';
+      case 'Food':
+        backgroundColor = '#fd7e14';
         break;
       case 'Shopping':
-        backgroundColor = '#fd7e14';
+        backgroundColor = '#6f42c1';
         break;
       case 'Entertainment':
         backgroundColor = '#e83e8c';
@@ -470,28 +470,35 @@ function App() {
         </div>
 
         {selectedTravelId ? (
-          <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor='start'
-            endAccessor='end'
-            style={{ height: 600 }}
-            views={['day']}
-            view='day'
-            date={selectedDate}
-            onNavigate={handleDateChange}
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
-            selectable
-            eventPropGetter={eventStyleGetter}
-            step={60}
-            timeslots={1}
-            min={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 6, 0)} // 6:00 AM
-            max={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59)} // 11:59 PM
-            toolbar={false}
-            showMultiDayTimes={false}
-            dayLayoutAlgorithm='no-overlap'
-          />
+          <div>
+            {/* Debug info - remove in production */}
+            <div style={{ background: 'rgba(255,255,255,0.1)', padding: '10px', margin: '10px 0', borderRadius: '5px', fontSize: '12px' }}>
+              <strong>Debug Info:</strong> Travel ID: {selectedTravelId} | Events loaded: {events.length} | Current date: {format(selectedDate, 'yyyy-MM-dd')}
+            </div>
+            
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor='start'
+              endAccessor='end'
+              style={{ height: 600 }}
+              views={['day']}
+              view='day'
+              date={selectedDate}
+              onNavigate={handleDateChange}
+              onSelectSlot={handleSelectSlot}
+              onSelectEvent={handleSelectEvent}
+              selectable
+              eventPropGetter={eventStyleGetter}
+              step={60}
+              timeslots={1}
+              min={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 6, 0)} // 6:00 AM
+              max={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59)} // 11:59 PM
+              toolbar={false}
+              showMultiDayTimes={false}
+              dayLayoutAlgorithm='no-overlap'
+            />
+          </div>
         ) : (
           <div className='no-travel-selected'>
             <div className='no-travel-message'>
@@ -506,20 +513,20 @@ function App() {
         <h3>Event Types:</h3>
         <div className='legend-items'>
           <div className='legend-item'>
-            <span className='legend-color planning'></span>
-            <span>Planning</span>
+            <span className='legend-color accommodation'></span>
+            <span>Accommodation</span>
           </div>
           <div className='legend-item'>
-            <span className='legend-color sightseeing'></span>
-            <span>Sightseeing</span>
+            <span className='legend-color transportation'></span>
+            <span>Transportation</span>
+          </div>
+          <div className='legend-item'>
+            <span className='legend-color activity'></span>
+            <span>Activity</span>
           </div>
           <div className='legend-item'>
             <span className='legend-color food'></span>
             <span>Food</span>
-          </div>
-          <div className='legend-item'>
-            <span className='legend-color culture'></span>
-            <span>Culture</span>
           </div>
           <div className='legend-item'>
             <span className='legend-color shopping'></span>
@@ -553,7 +560,7 @@ function App() {
 function EventModal({ slot, event, isEditing, onClose, onSave, onDelete, isLoading, error }) {
   const [formData, setFormData] = useState({
     title: event?.title || '',
-    type: event?.type || 'Planning',
+    type: event?.type || 'Accommodation',
     resource: event?.resource || '',
     start: slot
       ? format(slot.start, "yyyy-MM-dd'T'HH:mm")
@@ -623,10 +630,10 @@ function EventModal({ slot, event, isEditing, onClose, onSave, onDelete, isLoadi
               onChange={handleChange}
               required
             >
-              <option value='Planning'>Planning</option>
-              <option value='Sightseeing'>Sightseeing</option>
+              <option value='Accommodation'>Accommodation</option>
+              <option value='Transportation'>Transportation</option>
+              <option value='Activity'>Activity</option>
               <option value='Food'>Food</option>
-              <option value='Culture'>Culture</option>
               <option value='Shopping'>Shopping</option>
               <option value='Entertainment'>Entertainment</option>
             </select>

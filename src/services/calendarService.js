@@ -45,8 +45,20 @@ export const loadEvents = async (travelId) => {
   }
 
   try {
+    console.log('Making API request for travel ID:', travelId);
     const response = await makeRequest(`/events/travels/${travelId}/events`);
-    return response.data || [];
+    console.log('API response:', response);
+    
+    // The backend returns { success: true, data: [...], pagination: {...} }
+    // We need to extract the data array and transform each event
+    if (response.data && Array.isArray(response.data)) {
+      const transformedEvents = response.data.map(event => transformBackendEventToFrontend(event));
+      console.log('Transformed events:', transformedEvents);
+      return transformedEvents;
+    }
+    
+    console.log('No events data found in response');
+    return [];
   } catch (error) {
     console.error('Failed to load events:', error);
     throw error;
@@ -204,32 +216,32 @@ export const loadTravels = async () => {
 
 // Helper function to get event type ID from frontend type name
 const getEventTypeId = (frontendType) => {
-  // Map frontend event types to backend event type IDs
+  // Map frontend event types to backend event type IDs based on actual database
   const typeMapping = {
-    'Planning': 22, // Business Conference
-    'Sightseeing': 10, // Tour
+    'Accommodation': 1, // Hotel
+    'Transportation': 4, // Flight
+    'Activity': 10, // Tour
     'Food': 12, // Restaurant
-    'Culture': 8, // Museum
     'Shopping': 15, // Shopping
     'Entertainment': 17, // Entertainment
   };
   
-  return typeMapping[frontendType] || 22; // Default to Business Conference
+  return typeMapping[frontendType] || 1; // Default to Hotel
 };
 
 // Helper function to get frontend type name from backend event type
 const getFrontendType = (backendEventType) => {
-  // Map backend event type IDs to frontend event types
+  // Map backend event type IDs to frontend event types based on actual database
   const typeMapping = {
-    22: 'Planning', // Business Conference
-    10: 'Sightseeing', // Tour
+    1: 'Accommodation', // Hotel
+    4: 'Transportation', // Flight
+    10: 'Activity', // Tour
     12: 'Food', // Restaurant
-    8: 'Culture', // Museum
     15: 'Shopping', // Shopping
     17: 'Entertainment', // Entertainment
   };
   
-  return typeMapping[backendEventType] || 'Planning';
+  return typeMapping[backendEventType] || 'Accommodation';
 };
 
 // Helper function to transform backend event to frontend format
