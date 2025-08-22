@@ -124,7 +124,7 @@ def mock_settings():
     """Mock settings for testing"""
     class MockSettings:
         DEBUG = True
-        PORT = 5000
+        PORT = 5555
         DATABASE_PATH = "./test.db"
         UPLOAD_PATH = "./test_uploads"
         LOG_LEVEL = "debug"

@@ -221,7 +221,7 @@ class TestConfiguration:
     
     def test_environment_variables(self, test_settings):
         """Test environment variables are loaded"""
-        assert test_settings.PORT == 5000
+        assert test_settings.PORT == 5555
         assert test_settings.DATABASE_PATH == "./test_travelplanner.db"
         assert test_settings.UPLOAD_PATH == "./test_uploads"
         assert test_settings.LOG_LEVEL == "debug"

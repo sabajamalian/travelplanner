@@ -9,7 +9,7 @@ from datetime import datetime
 
 def test_list_travels():
     """Test the list travels endpoint"""
-    base_url = "http://localhost:5000"
+    base_url = "http://localhost:5555"
     
     print("=== Testing List Travels Endpoint ===")
     
@@ -32,7 +32,7 @@ def test_list_travels():
         else:
             print(f"Error: {response.text}")
     except requests.exceptions.ConnectionError:
-        print("Error: Could not connect to server. Make sure the server is running on port 5000.")
+        print("Error: Could not connect to server. Make sure the server is running on port 5555.")
     except Exception as e:
         print(f"Error: {e}")
     

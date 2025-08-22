@@ -40,7 +40,7 @@ cp .env.example .env
 # Edit .env file with your configuration
 # Default settings:
 # FASTAPI_APP=main.py
-# PORT=5000
+# PORT=5555
 # DATABASE_PATH=./travelplanner.db
 # UPLOAD_PATH=./uploads
 # LOG_LEVEL=info
@@ -52,10 +52,10 @@ cp .env.example .env
 python main.py
 
 # Or using uvicorn directly
-uvicorn main:app --reload --port 5000
+uvicorn main:app --reload --port 5555
 
-# The server will be available at http://localhost:5000
-# API documentation will be available at http://localhost:5000/docs
+# The server will be available at http://localhost:5555
+# API documentation will be available at http://localhost:5555/docs
 ```
 
 ### 5. Run Tests
@@ -114,7 +114,7 @@ server/
 
 ## Development Notes
 
-- **Port:** Backend runs on port 5000 to avoid conflicts with frontend (port 3000)
+- **Port:** Backend runs on port 5555 to avoid conflicts with frontend (port 3000)
 - **Database:** SQLite database file is created automatically if it doesn't exist
 - **CORS:** Configured to allow frontend communication from localhost:3000
 - **File Uploads:** Supported for event attachments with size and type validation
@@ -128,7 +128,7 @@ server/
 
 1. **Port already in use:**
    - Change PORT in .env file
-   - Kill process using the port: `lsof -ti:5000 | xargs kill -9`
+   - Kill process using the port: `lsof -ti:5555 | xargs kill -9`
 
 2. **Database connection errors:**
    - Check DATABASE_PATH in .env

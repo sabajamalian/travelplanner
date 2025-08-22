@@ -3,7 +3,7 @@
  * Handles all API communication for calendar events and event types
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost:5555/api';
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {

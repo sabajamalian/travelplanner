@@ -62,20 +62,129 @@ function App() {
     clearOperationError,
   } = useCalendarEvents(selectedTravelId);
 
+  const handleTravelSelection = (travelId) => {
+    setSelectedTravelId(travelId ? parseInt(travelId) : null);
+    
+    // If a travel is selected, jump to its start date
+    if (travelId) {
+      const selectedTravel = travels.find(travel => travel.id === parseInt(travelId));
+      if (selectedTravel && selectedTravel.start_date) {
+        try {
+          // Parse the start date and set it as the selected date
+          const startDate = new Date(selectedTravel.start_date);
+          // Validate the date
+          if (isNaN(startDate.getTime())) {
+            console.error('Invalid start date format:', selectedTravel.start_date);
+            // Fallback to current date
+            setSelectedDate(new Date());
+            return;
+          }
+          setSelectedDate(startDate);
+        } catch (error) {
+          console.error('Error parsing travel start date:', error);
+          // Fallback to current date
+          setSelectedDate(new Date());
+        }
+      } else {
+        console.warn('Selected travel has no start date, using current date');
+        setSelectedDate(new Date());
+      }
+    }
+  };
+
+  // Helper function to get current travel's date range
+  const getCurrentTravelDateRange = () => {
+    if (!selectedTravelId) return null;
+    const selectedTravel = travels.find(travel => travel.id === selectedTravelId);
+    if (!selectedTravel || !selectedTravel.start_date || !selectedTravel.end_date) return null;
+    
+    try {
+      const startDate = new Date(selectedTravel.start_date);
+      const endDate = new Date(selectedTravel.end_date);
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('Invalid date format in travel:', selectedTravel);
+        return null;
+      }
+      
+      return { start: startDate, end: endDate };
+    } catch (error) {
+      console.error('Error parsing travel dates:', error);
+      return null;
+    }
+  };
+
+  // Helper function to check if current date is within travel range
+  const isDateInTravelRange = (date) => {
+    const range = getCurrentTravelDateRange();
+    if (!range) return false;
+    
+    try {
+      const checkDate = new Date(date);
+      if (isNaN(checkDate.getTime())) {
+        console.error('Invalid date to check:', date);
+        return false;
+      }
+      return checkDate >= range.start && checkDate <= range.end;
+    } catch (error) {
+      console.error('Error checking date range:', error);
+      return false;
+    }
+  };
+
+  // Enhanced date navigation that respects travel boundaries
   const handleDateChange = date => {
+    const range = getCurrentTravelDateRange();
+    if (range) {
+      // Ensure the date is within the travel range
+      if (date < range.start) {
+        date = range.start;
+      } else if (date > range.end) {
+        date = range.end;
+      }
+    }
     setSelectedDate(date);
   };
 
   const handlePreviousDay = () => {
-    setSelectedDate(prevDate => subDays(prevDate, 1));
+    const range = getCurrentTravelDateRange();
+    if (range) {
+      const prevDate = subDays(selectedDate, 1);
+      if (prevDate >= range.start) {
+        setSelectedDate(prevDate);
+      }
+    } else {
+      setSelectedDate(prevDate => subDays(prevDate, 1));
+    }
   };
 
   const handleNextDay = () => {
-    setSelectedDate(prevDate => addDays(prevDate, 1));
+    const range = getCurrentTravelDateRange();
+    if (range) {
+      const nextDate = addDays(selectedDate, 1);
+      if (nextDate <= range.end) {
+        setSelectedDate(nextDate);
+      }
+    } else {
+      setSelectedDate(prevDate => addDays(prevDate, 1));
+    }
   };
 
   const handleToday = () => {
-    setSelectedDate(new Date());
+    const range = getCurrentTravelDateRange();
+    if (range) {
+      const today = new Date();
+      // If today is within travel range, go to today
+      if (today >= range.start && today <= range.end) {
+        setSelectedDate(today);
+      } else {
+        // Otherwise, go to the start of the travel
+        setSelectedDate(range.start);
+      }
+    } else {
+      setSelectedDate(new Date());
+    }
   };
 
   const handleSelectSlot = slotInfo => {
@@ -179,13 +288,13 @@ function App() {
           <select
             id='travel-select'
             value={selectedTravelId || ''}
-            onChange={(e) => setSelectedTravelId(e.target.value ? parseInt(e.target.value) : null)}
+            onChange={(e) => handleTravelSelection(e.target.value)}
             disabled={isLoadingTravels}
           >
             <option value=''>-- Select a Travel --</option>
             {travels.map(travel => (
               <option key={travel.id} value={travel.id}>
-                {travel.title} ({travel.destination})
+                {travel.title} ({travel.destination}) - {travel.start_date} to {travel.end_date}
               </option>
             ))}
           </select>
@@ -194,9 +303,65 @@ function App() {
         </div>
 
         {selectedTravelId && (
-          <p className='instructions'>
-            💡 Click on any time slot to create a new event!
-          </p>
+          <div className='travel-info'>
+            {(() => {
+              const selectedTravel = travels.find(travel => travel.id === selectedTravelId);
+              if (selectedTravel) {
+                const startDate = new Date(selectedTravel.start_date);
+                const endDate = new Date(selectedTravel.end_date);
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const currentDayIndex = Math.ceil((selectedDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const progressPercentage = Math.min(100, Math.max(0, (currentDayIndex / totalDays) * 100));
+                
+                return (
+                  <div className='travel-details'>
+                    <h3>📅 {selectedTravel.title}</h3>
+                    <p><strong>Destination:</strong> {selectedTravel.destination}</p>
+                    <p><strong>Date Range:</strong> {selectedTravel.start_date} to {selectedTravel.end_date}</p>
+                    <p><strong>Current Date:</strong> {format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+                    <p><strong>Progress:</strong> Day {currentDayIndex} of {totalDays}</p>
+                    <div className='travel-progress'>
+                      <div className='progress-bar'>
+                        <div 
+                          className='progress-fill' 
+                          style={{ width: `${progressPercentage}%` }}
+                        ></div>
+                      </div>
+                      <span className='progress-text'>{Math.round(progressPercentage)}%</span>
+                    </div>
+                    <div className='quick-navigation'>
+                      <button 
+                        className='nav-btn start-btn'
+                        onClick={() => setSelectedDate(new Date(selectedTravel.start_date))}
+                      >
+                        🚀 Start
+                      </button>
+                      <button 
+                        className='nav-btn today-btn'
+                        onClick={handleToday}
+                        disabled={!isDateInTravelRange(new Date())}
+                      >
+                        📅 Today
+                      </button>
+                      <button 
+                        className='nav-btn end-btn'
+                        onClick={() => setSelectedDate(new Date(selectedTravel.end_date))}
+                      >
+                        🎯 End
+                      </button>
+                    </div>
+                    {selectedTravel.description && (
+                      <p><strong>Description:</strong> {selectedTravel.description}</p>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            <p className='instructions'>
+              💡 Click on any time slot to create a new event!
+            </p>
+          </div>
         )}
         
         {!selectedTravelId && (
@@ -245,8 +410,13 @@ function App() {
 
           <div className='date-navigation'>
             <div
-              className='date-circle yesterday'
-              onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+              className={`date-circle yesterday ${getCurrentTravelDateRange() && selectedDate <= getCurrentTravelDateRange().start ? 'disabled' : ''}`}
+              onClick={() => {
+                const range = getCurrentTravelDateRange();
+                if (!range || selectedDate > range.start) {
+                  setSelectedDate(subDays(selectedDate, 1));
+                }
+              }}
             >
               <span className='date-day'>
                 {format(subDays(selectedDate, 1), 'd')}
@@ -263,8 +433,13 @@ function App() {
             </div>
 
             <div
-              className='date-circle tomorrow'
-              onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+              className={`date-circle tomorrow ${getCurrentTravelDateRange() && selectedDate >= getCurrentTravelDateRange().end ? 'disabled' : ''}`}
+              onClick={() => {
+                const range = getCurrentTravelDateRange();
+                if (!range || selectedDate < range.end) {
+                  setSelectedDate(addDays(selectedDate, 1));
+                }
+              }}
             >
               <span className='date-day'>
                 {format(addDays(selectedDate, 1), 'd')}
@@ -311,8 +486,8 @@ function App() {
             eventPropGetter={eventStyleGetter}
             step={60}
             timeslots={1}
-            min={new Date(2024, 0, 15, 6, 0)} // 6:00 AM
-            max={new Date(2024, 0, 15, 23, 59)} // 11:59 PM
+            min={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 6, 0)} // 6:00 AM
+            max={new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59)} // 11:59 PM
             toolbar={false}
             showMultiDayTimes={false}
             dayLayoutAlgorithm='no-overlap'
