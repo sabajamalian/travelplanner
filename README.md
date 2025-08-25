@@ -1,39 +1,34 @@
 # Travel Planner
 
-A comprehensive travel planning application with an interactive calendar interface for managing travel events and schedules.
+A modern, minimalistic travel planning application built with React and FastAPI.
 
 ## Features
 
-### 🗓️ Smart Calendar Interface
-- **Daily Timeline View**: View your travel schedule in a detailed daily timeline format
-- **Travel-Aware Navigation**: Automatically jumps to the first day of a selected travel
-- **Boundary-Aware Navigation**: Date navigation respects travel start and end dates
-- **Visual Progress Tracking**: See your progress through the travel with a progress bar
+### ✈️ Travels List Page
+- **Modern Card Interface**: Beautiful, responsive travel cards with hover effects
+- **Smart Status Indicators**: Visual status showing if travels are upcoming, ongoing, or completed
+- **Search & Filter**: Search by title/description and filter by destination
+- **Duration Calculation**: Automatic calculation of travel duration
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
 
-### 🚀 Travel Management
-- **Travel Selection**: Dropdown menu to select from available travels
-- **Automatic Date Jumping**: Selecting a travel automatically navigates to its start date
-- **Travel Information Display**: Shows travel details, destination, and date range
-- **Quick Navigation**: Jump to start, end, or today (if within travel range)
+### 📅 Timeline Page
+- **Daily Calendar View**: Interactive daily schedule for each travel
+- **Event Management**: View and manage events within each travel
+- **Navigation**: Easy navigation between dates with visual date circles
+- **Event Types**: Color-coded events for different categories (accommodation, transportation, activities, etc.)
 
-### 📅 Event Management
-- **Interactive Event Creation**: Click on time slots to create new events
-- **Event Types**: Categorized events (Planning, Sightseeing, Food, Culture, Shopping, Entertainment)
-- **Event Editing**: Modify existing events with a user-friendly modal
-- **Event Deletion**: Remove events with confirmation
-
-### 🎨 User Experience
-- **Responsive Design**: Works on desktop and mobile devices
-- **Visual Feedback**: Disabled navigation when at travel boundaries
-- **Loading States**: Clear indication when data is being fetched
-- **Error Handling**: User-friendly error messages and retry options
+### 🎨 Design Features
+- **Minimalistic UI**: Clean, modern interface with smooth animations
+- **Gradient Backgrounds**: Beautiful color schemes throughout the application
+- **Hover Effects**: Interactive elements with smooth transitions
+- **Responsive Layout**: Adapts to all screen sizes
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- Python 3.8+ (for backend)
-- SQLite (included)
+- Python 3.8 or higher
+- SQLite
 
 ### Installation
 
@@ -54,80 +49,113 @@ A comprehensive travel planning application with an interactive calendar interfa
    pip install -r requirements.txt
    ```
 
-4. **Set up the database**
-   ```bash
-   cd database
-   sqlite3 travelplanner.db < schema.sql
-   sqlite3 travelplanner.db < test-data.sql
-   ```
-
-### Running the Application
-
-1. **Start the backend server**
+4. **Start the backend server**
    ```bash
    cd server
-   python -m uvicorn main:app --reload --port 5555
+   python3 main.py
    ```
+   The backend will run on `http://localhost:5555`
 
-2. **Start the frontend development server**
+5. **Start the frontend development server**
    ```bash
    npm run dev
    ```
-
-3. **Open your browser** and navigate to `http://localhost:5173`
+   The frontend will run on `http://localhost:5173`
 
 ## Usage
 
-### Selecting a Travel
-1. Use the dropdown menu in the header to select a travel
-2. The calendar automatically jumps to the first day of the selected travel
-3. All events for that travel are displayed on the timeline
+### Viewing Travels
+1. Navigate to the main page - you'll see all your travels displayed as beautiful cards
+2. Use the search bar to find specific travels by title or description
+3. Use the destination filter to narrow down travels by location
+4. Each card shows:
+   - Travel status (upcoming/ongoing/completed)
+   - Duration in days
+   - Destination with location icon
+   - Date range with formatted dates
+   - Click hint to view timeline
 
-### Navigating the Calendar
-- **Previous/Next Day**: Use the arrow buttons or click on yesterday/tomorrow circles
-- **Quick Navigation**: Use the Start, Today, and End buttons for instant navigation
-- **Travel Boundaries**: Navigation is automatically limited to the travel's date range
+### Viewing Timeline
+1. Click on any travel card to navigate to its timeline page
+2. The timeline shows a daily calendar view for that specific travel
+3. Navigate between dates using the arrow buttons or date circles
+4. View events color-coded by type
+5. Use the "New Event" button to add events (functionality coming soon)
 
-### Managing Events
-1. **Create Event**: Click on any time slot in the calendar
-2. **Edit Event**: Click on an existing event
-3. **Delete Event**: Use the delete button in the edit modal
-
-## Technical Details
-
-### Frontend Architecture
-- **React 18** with functional components and hooks
-- **React Big Calendar** for the calendar interface
-- **Date-fns** for date manipulation
-- **Custom hooks** for state management and API communication
-
-### Backend Architecture
-- **FastAPI** for the REST API
-- **SQLite** database with proper indexing
-- **Pydantic** for data validation
-- **Middleware** for CORS, logging, and error handling
-
-### Database Schema
-- **Travels**: Store travel information with start/end dates
-- **Events**: Store individual events with timing and location
-- **Event Types**: Categorize events for better organization
+### Navigation
+- **My Travels**: View all your travels
+- **New Travel**: Create a new travel (functionality coming soon)
+- **Back to Travels**: Return to the travels list from any timeline
 
 ## API Endpoints
 
+The application uses the following backend API endpoints:
+
 - `GET /api/travels/` - List all travels
-- `GET /api/events/travels/{id}/events` - Get events for a specific travel
-- `POST /api/events/travels/{id}/events` - Create a new event
-- `PUT /api/events/{id}` - Update an event
-- `DELETE /api/events/{id}` - Delete an event
+- `GET /api/travels/{id}` - Get specific travel details
+- `GET /api/events/travels/{travelId}/events` - Get events for a specific travel
+
+## Project Structure
+
+```
+travelplanner/
+├── src/
+│   ├── components/
+│   │   └── layout/
+│   │       └── Navigation.jsx
+│   ├── pages/
+│   │   ├── TravelsList.jsx      # Main travels list page
+│   │   └── Timeline.jsx         # Timeline view for specific travel
+│   ├── styles/
+│   │   ├── TravelsList.css      # Styles for travels list
+│   │   ├── Timeline.css         # Styles for timeline
+│   │   └── Navigation.css       # Navigation styles
+│   ├── App.jsx                  # Main app with routing
+│   └── main.jsx                 # App entry point
+├── server/                      # Backend API server
+└── package.json
+```
+
+## Technologies Used
+
+### Frontend
+- **React 18** - Modern React with hooks
+- **React Router 6** - Client-side routing
+- **React Big Calendar** - Calendar component for timeline view
+- **date-fns** - Date manipulation utilities
+- **Vite** - Fast build tool and dev server
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **SQLite** - Lightweight database
+- **Pydantic** - Data validation
+
+### Styling
+- **CSS3** - Modern CSS with gradients, animations, and responsive design
+- **CSS Grid & Flexbox** - Modern layout techniques
+- **CSS Custom Properties** - Dynamic styling
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Future Enhancements
+
+- [ ] Create new travel functionality
+- [ ] Edit travel details
+- [ ] Delete travels
+- [ ] Event creation and editing
+- [ ] File attachments for events
+- [ ] Travel sharing and collaboration
+- [ ] Mobile app version
+- [ ] Offline support
+- [ ] Travel templates
+- [ ] Export to calendar formats
