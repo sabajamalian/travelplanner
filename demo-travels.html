@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Planner - New Features Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        .feature-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .feature-description {
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        .demo-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .demo-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .tech-stack {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        .tech-stack h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+        .tech-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .tech-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        .status {
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ Travel Planner - New Features</h1>
+        
+        <div class="status">✅ Ready to Demo</div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <span class="feature-icon">📋</span>
+                <div class="feature-title">Travels List Page</div>
+                <div class="feature-description">
+                    A beautiful, modern interface displaying all your travels as interactive cards. 
+                    Features search, filtering, and smart status indicators.
+                </div>
+                <a href="http://localhost:5173/travels" class="demo-button">View Travels List</a>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">📅</span>
+                <div class="feature-title">Timeline View</div>
+                <div class="feature-description">
+                    Interactive daily calendar view for each travel. Navigate between dates 
+                    and view events with beautiful visual design.
+                </div>
+                <a href="http://localhost:5173/travels" class="demo-button">Start with Travels</a>
+            </div>
+            
+            <div class="feature-card">
+                <span class="feature-icon">🎨</span>
+                <div class="feature-title">Modern Design</div>
+                <div class="feature-description">
+                    Clean, minimalistic UI with smooth animations, gradient backgrounds, 
+                    and responsive design that works on all devices.
+                </div>
+                <a href="http://localhost:5173" class="demo-button">Explore App</a>
+            </div>
+        </div>
+        
+        <div class="tech-stack">
+            <h3>🛠️ Technology Stack</h3>
+            <div class="tech-list">
+                <div class="tech-item">React 18 + Hooks</div>
+                <div class="tech-item">React Router 6</div>
+                <div class="tech-item">React Big Calendar</div>
+                <div class="tech-item">FastAPI Backend</div>
+                <div class="tech-item">SQLite Database</div>
+                <div class="tech-item">Modern CSS3</div>
+                <div class="tech-item">Vite Build Tool</div>
+                <div class="tech-item">Responsive Design</div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <h3>🚀 How to Use</h3>
+            <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>Click "View Travels List" to see all your travels</li>
+                <li>Use search and filters to find specific travels</li>
+                <li>Click on any travel card to view its timeline</li>
+                <li>Navigate between dates in the timeline view</li>
+                <li>Use the navigation menu to switch between pages</li>
+            </ol>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <p><strong>Backend API:</strong> <a href="http://localhost:5555/api/travels/" target="_blank">http://localhost:5555</a></p>
+            <p><strong>Frontend App:</strong> <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
+        </div>
+    </div>
+</body>
+</html>
