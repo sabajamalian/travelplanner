@@ -1,6 +1,6 @@
-# Travel Planner
+# TravelPlanner Frontend
 
-A modern, minimalistic travel planning application built with React and FastAPI.
+A modern, minimalistic travel planning application frontend built with React.
 
 ## Features
 
@@ -27,8 +27,6 @@ A modern, minimalistic travel planning application built with React and FastAPI.
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- Python 3.8 or higher
-- SQLite
 
 ### Installation
 
@@ -43,20 +41,7 @@ A modern, minimalistic travel planning application built with React and FastAPI.
    npm install
    ```
 
-3. **Install backend dependencies**
-   ```bash
-   cd server
-   pip install -r requirements.txt
-   ```
-
-4. **Start the backend server**
-   ```bash
-   cd server
-   python3 main.py
-   ```
-   The backend will run on `http://localhost:5555`
-
-5. **Start the frontend development server**
+3. **Start the frontend development server**
    ```bash
    npm run dev
    ```
@@ -87,7 +72,9 @@ A modern, minimalistic travel planning application built with React and FastAPI.
 - **New Travel**: Create a new travel (functionality coming soon)
 - **Back to Travels**: Return to the travels list from any timeline
 
-## API Endpoints
+## API Integration
+
+This frontend application integrates with the TravelPlanner API backend. The backend has been moved to a separate repository: [travelplanner-api](https://github.com/yourusername/travelplanner-api).
 
 The application uses the following backend API endpoints:
 
@@ -101,19 +88,23 @@ The application uses the following backend API endpoints:
 travelplanner/
 ├── src/
 │   ├── components/
-│   │   └── layout/
-│   │       └── Navigation.jsx
+│   │   ├── calendar/          # Calendar components
+│   │   ├── layout/
+│   │   │   └── Navigation.jsx # Navigation component
+│   │   └── ui/                # Reusable UI components
+│   ├── hooks/
+│   │   └── useCalendarEvents.js # Custom hook for calendar events
 │   ├── pages/
-│   │   ├── TravelsList.jsx      # Main travels list page
-│   │   └── Timeline.jsx         # Timeline view for specific travel
-│   ├── styles/
-│   │   ├── TravelsList.css      # Styles for travels list
-│   │   ├── Timeline.css         # Styles for timeline
-│   │   └── Navigation.css       # Navigation styles
-│   ├── App.jsx                  # Main app with routing
-│   └── main.jsx                 # App entry point
-├── server/                      # Backend API server
-└── package.json
+│   │   ├── TravelsList.jsx    # Main travels list page
+│   │   └── Timeline.jsx       # Timeline view for specific travel
+│   ├── services/
+│   │   └── calendarService.js # API service functions
+│   ├── styles/                # CSS files for styling
+│   ├── utils/                 # Utility functions
+│   ├── App.jsx                # Main app with routing
+│   └── main.jsx               # App entry point
+├── package.json               # Frontend dependencies
+└── vite.config.js            # Vite configuration
 ```
 
 ## Technologies Used
@@ -125,15 +116,19 @@ travelplanner/
 - **date-fns** - Date manipulation utilities
 - **Vite** - Fast build tool and dev server
 
-### Backend
-- **FastAPI** - Modern Python web framework
-- **SQLite** - Lightweight database
-- **Pydantic** - Data validation
-
 ### Styling
 - **CSS3** - Modern CSS with gradients, animations, and responsive design
 - **CSS Grid & Flexbox** - Modern layout techniques
 - **CSS Custom Properties** - Dynamic styling
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
 ## Contributing
 
