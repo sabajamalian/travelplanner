@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -25,7 +25,6 @@ const localizer = dateFnsLocalizer({
 
 const Timeline = () => {
   const { travelId } = useParams();
-  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [travel, setTravel] = useState(null);
   const [events, setEvents] = useState([]);
@@ -208,9 +207,6 @@ const Timeline = () => {
         <div className="error-container">
           <h2>Travel not found</h2>
           <p>The travel you're looking for doesn't exist.</p>
-          <button onClick={() => navigate('/travels')} className="retry-button">
-            Back to Travels
-          </button>
         </div>
       </div>
     );
@@ -220,12 +216,6 @@ const Timeline = () => {
     <div className="timeline-container">
       <header className="timeline-header">
         <div className="header-content">
-          <button 
-            className="back-button"
-            onClick={() => navigate('/travels')}
-          >
-            ← Back to Travels
-          </button>
           <div className="travel-info">
             <h1>{travel.title}</h1>
             <p className="travel-subtitle">
@@ -234,14 +224,7 @@ const Timeline = () => {
             </p>
           </div>
         </div>
-        <div className="header-actions">
-          <button 
-            className="new-event-button"
-            onClick={() => setShowModal(true)}
-          >
-            + New Event
-          </button>
-        </div>
+
       </header>
 
       <div className="calendar-container">

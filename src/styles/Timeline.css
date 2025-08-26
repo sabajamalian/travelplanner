@@ -12,7 +12,7 @@
   color: white;
   padding: 2rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
@@ -20,27 +20,11 @@
 .header-content {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: center;
+  text-align: center;
 }
 
-.back-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
 
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-}
 
 .travel-info h1 {
   font-size: 2rem;
@@ -56,35 +40,13 @@
   font-weight: 400;
 }
 
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
 
-.new-event-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.new-event-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
 
 /* Calendar Container */
 .calendar-container {
   background: white;
-  margin: 2rem;
+  margin: 2rem auto;
+  max-width: 1200px;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -241,7 +203,8 @@
 /* Legend */
 .legend {
   background: white;
-  margin: 0 2rem 2rem 2rem;
+  margin: 0 auto 2rem auto;
+  max-width: 1200px;
   padding: 1.5rem;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -252,12 +215,14 @@
   color: #1e293b;
   font-weight: 600;
   font-size: 1.1rem;
+  text-align: center;
 }
 
 .legend-items {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
+  justify-content: center;
 }
 
 .legend-item {
@@ -426,7 +391,8 @@
   }
   
   .calendar-container {
-    margin: 1rem;
+    margin: 1rem auto;
+    max-width: calc(100% - 2rem);
   }
   
   .calendar-header {
@@ -461,7 +427,8 @@
   }
   
   .legend {
-    margin: 0 1rem 1rem 1rem;
+    margin: 0 auto 1rem auto;
+    max-width: calc(100% - 2rem);
     padding: 1rem;
   }
   
@@ -480,7 +447,8 @@
   }
   
   .calendar-container {
-    margin: 0.5rem;
+    margin: 0.5rem auto;
+    max-width: calc(100% - 1rem);
   }
   
   .calendar-header {
