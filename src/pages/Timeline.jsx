@@ -13,6 +13,7 @@ import differenceInDays from 'date-fns/differenceInDays';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/Timeline.css';
+import { createEvent, updateEvent, deleteEvent, loadEventTypes } from '../services/calendarService';
 
 const locales = {
   'en-US': enUS,
@@ -38,11 +39,23 @@ const Timeline = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [eventTypes, setEventTypes] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'Activity',
+    location: '',
+    start: new Date(),
+    end: new Date(),
+  });
 
   useEffect(() => {
     if (travelId) {
       fetchTravelData();
       fetchEvents();
+      fetchEventTypes();
     }
   }, [travelId]);
 
@@ -141,6 +154,18 @@ const Timeline = () => {
   };
 
   const handleSelectSlot = slotInfo => {
+    const startTime = new Date(slotInfo.start);
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
+    
+    setFormData({
+      title: '',
+      description: '',
+      type: 'Activity',
+      location: '',
+      start: startTime,
+      end: endTime,
+    });
+    
     setSelectedSlot(slotInfo);
     setSelectedEvent(null);
     setIsEditing(false);
@@ -148,6 +173,15 @@ const Timeline = () => {
   };
 
   const handleSelectEvent = event => {
+    setFormData({
+      title: event.title,
+      description: event.description || '',
+      type: event.type,
+      location: event.resource || '',
+      start: new Date(event.start),
+      end: new Date(event.end),
+    });
+    
     setSelectedEvent(event);
     setSelectedSlot(null);
     setIsEditing(true);
@@ -297,6 +331,84 @@ const Timeline = () => {
     return typeMapping[eventType] || '#3174ad';
   };
 
+  const fetchEventTypes = async () => {
+    try {
+      const types = await loadEventTypes();
+      setEventTypes(types);
+    } catch (err) {
+      console.error('Failed to load event types:', err);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Validate form data
+    if (formData.end <= formData.start) {
+      alert('End time must be after start time');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    try {
+      // Transform form data to match the expected format
+      const eventData = {
+        ...formData,
+        resource: formData.location, // Map location to resource for the API
+      };
+      
+      if (isEditing && selectedEvent) {
+        // Update existing event
+        const updatedEvent = await updateEvent(selectedEvent.id, eventData);
+        setEvents(prev => prev.map(event => 
+          event.id === selectedEvent.id ? updatedEvent : event
+        ));
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+      } else {
+        // Create new event
+        const newEvent = await createEvent(eventData, travelId);
+        setEvents(prev => [...prev, newEvent]);
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+      }
+      
+      handleCloseModal();
+    } catch (err) {
+      console.error('Failed to save event:', err);
+      alert('Failed to save event. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEvent || !window.confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      await deleteEvent(selectedEvent.id);
+      setEvents(prev => prev.filter(event => event.id !== selectedEvent.id));
+      handleCloseModal();
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="timeline-container">
@@ -346,6 +458,19 @@ const Timeline = () => {
           </div>
         </div>
       </header>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="success-message">
+          <div className="success-content">
+            <svg className="success-icon" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            <span>{isEditing ? 'Event updated successfully!' : 'Event created successfully!'}</span>
+          </div>
+        </div>
+      )}
 
       <div className="timeline-content">
         <div className="horizontal-timeline-section">
@@ -410,18 +535,131 @@ const Timeline = () => {
         </div>
       </div>
 
-      {/* Event Modal would go here - simplified for now */}
+      {/* Event Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content event-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Event Details</h2>
+              <h2>{isEditing ? 'Edit Event' : 'Create New Event'}</h2>
               <button className="close-button" onClick={handleCloseModal}>&times;</button>
             </div>
-            <div className="modal-body">
-              <p>Event modal functionality would be implemented here.</p>
-              <p>This is a simplified version for demonstration.</p>
-            </div>
+            
+            <form onSubmit={handleSubmit} className="event-form">
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="title">Event Title *</label>
+                  <input
+                    type="text"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder="Enter event title"
+                    required
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="type">Event Type</label>
+                  <select
+                    id="type"
+                    value={formData.type}
+                    onChange={(e) => handleInputChange('type', e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="Activity">Activity</option>
+                    <option value="Accommodation">Accommodation</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Food">Food</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                  </select>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="start">Start Time *</label>
+                    <input
+                      type="datetime-local"
+                      id="start"
+                      value={format(formData.start, "yyyy-MM-dd'T'HH:mm")}
+                      onChange={(e) => handleInputChange('start', new Date(e.target.value))}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="end">End Time *</label>
+                    <input
+                      type="datetime-local"
+                      id="end"
+                      value={format(formData.end, "yyyy-MM-dd'T'HH:mm")}
+                      onChange={(e) => handleInputChange('end', new Date(e.target.value))}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="location">Location</label>
+                  <input
+                    type="text"
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    placeholder="Enter location (optional)"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="description">Description</label>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Enter event description (optional)"
+                    rows="3"
+                    className="form-textarea"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <div className="footer-actions">
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isSubmitting}
+                      className="delete-button"
+                    >
+                      {isSubmitting ? 'Deleting...' : 'Delete Event'}
+                    </button>
+                  )}
+                  
+                  <div className="primary-actions">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      disabled={isSubmitting}
+                      className="cancel-button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !formData.title.trim()}
+                      className="save-button"
+                    >
+                      {isSubmitting ? 'Saving...' : (isEditing ? 'Update Event' : 'Create Event')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
