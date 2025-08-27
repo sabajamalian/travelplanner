@@ -214,6 +214,72 @@ export const loadTravels = async () => {
   }
 };
 
+/**
+ * Get AI suggestion for an event at a specific time
+ * @param {number} travelId - The ID of the travel
+ * @param {Date} startTime - Start time for the event
+ * @param {Date} endTime - End time for the event
+ * @param {string} context - Additional context (optional)
+ * @returns {Promise<Object>} AI suggestion
+ */
+export const getAISuggestion = async (travelId, startTime, endTime, context = '') => {
+  try {
+    // TODO: Replace this mock with actual API call
+    // const response = await makeRequest(`/ai/suggest-event`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({
+    //     travel_id: travelId,
+    //     start_datetime: startTime.toISOString(),
+    //     end_datetime: endTime.toISOString(),
+    //     context: context,
+    //     existing_events: await loadEvents(travelId)
+    //   }),
+    // });
+    // return response.data;
+
+    // Mock response for testing
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    
+    const mockSuggestions = [
+      {
+        title: "Visit Local Museum",
+        description: "Explore the city's rich cultural heritage through fascinating exhibits and interactive displays. Perfect for learning about local history and art.",
+        type: "Activity",
+        location: "City Museum",
+        rating: "4.5"
+      },
+      {
+        title: "Local Food Tour",
+        description: "Experience authentic local cuisine with a guided food tour. Taste traditional dishes and learn about culinary traditions.",
+        type: "Food",
+        location: "Various Locations",
+        rating: "4.8"
+      },
+      {
+        title: "Scenic Walking Tour",
+        description: "Discover hidden gems and beautiful architecture on a guided walking tour through the city's most picturesque neighborhoods.",
+        type: "Activity",
+        location: "City Center",
+        rating: "4.6"
+      }
+    ];
+
+    // Filter suggestions based on context if provided
+    if (context.toLowerCase().includes('food') || context.toLowerCase().includes('restaurant')) {
+      return mockSuggestions.filter(s => s.type === 'Food');
+    } else if (context.toLowerCase().includes('museum') || context.toLowerCase().includes('culture')) {
+      return mockSuggestions.filter(s => s.title.toLowerCase().includes('museum'));
+    } else if (context.toLowerCase().includes('budget') || context.toLowerCase().includes('cheap')) {
+      return mockSuggestions.filter(s => s.title.toLowerCase().includes('walking'));
+    }
+
+    return mockSuggestions;
+  } catch (error) {
+    console.error('Failed to get AI suggestion:', error);
+    throw error;
+  }
+};
+
 // Helper function to get event type ID from frontend type name
 const getEventTypeId = (frontendType) => {
   // Map frontend event types to backend event type IDs based on actual database

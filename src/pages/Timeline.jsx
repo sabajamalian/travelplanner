@@ -13,7 +13,7 @@ import differenceInDays from 'date-fns/differenceInDays';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/Timeline.css';
-import { createEvent, updateEvent, deleteEvent, loadEventTypes } from '../services/calendarService';
+import { createEvent, updateEvent, deleteEvent, loadEventTypes, getAISuggestion } from '../services/calendarService';
 
 const locales = {
   'en-US': enUS,
@@ -42,6 +42,10 @@ const Timeline = () => {
   const [eventTypes, setEventTypes] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [aiContext, setAiContext] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -340,6 +344,38 @@ const Timeline = () => {
     }
   };
 
+  const handleGetAISuggestions = async () => {
+    if (!selectedSlot) return;
+    
+    setIsLoadingAI(true);
+    try {
+      const suggestions = await getAISuggestion(
+        travelId, 
+        formData.start, 
+        formData.end, 
+        aiContext
+      );
+      setAiSuggestions(suggestions);
+      setShowAISuggestions(true);
+    } catch (error) {
+      console.error('Failed to get AI suggestions:', error);
+      alert('Failed to get AI suggestions. Please try again.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const handleUseAISuggestion = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      title: suggestion.title,
+      description: suggestion.description,
+      type: suggestion.type || 'Activity',
+      location: suggestion.location || '',
+    }));
+    setShowAISuggestions(false);
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -543,6 +579,96 @@ const Timeline = () => {
               <h2>{isEditing ? 'Edit Event' : 'Create New Event'}</h2>
               <button className="close-button" onClick={handleCloseModal}>&times;</button>
             </div>
+            
+            {/* AI Suggestion Section */}
+            {!isEditing && (
+              <div className="ai-suggestion-section">
+                <div className="ai-header">
+                  <div className="ai-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                  </div>
+                  <div className="ai-content">
+                    <h3>AI Event Suggestions</h3>
+                    <p>Let AI suggest activities based on your travel plans and preferences</p>
+                  </div>
+                </div>
+                
+                <div className="ai-input-group">
+                  <textarea
+                    placeholder="Add context for better suggestions (e.g., 'I love museums and local food', 'Budget-friendly activities', 'Family-friendly options')"
+                    value={aiContext}
+                    onChange={(e) => setAiContext(e.target.value)}
+                    className="ai-context-input"
+                    rows="2"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGetAISuggestions}
+                    disabled={isLoadingAI}
+                    className="ai-suggest-button"
+                  >
+                    {isLoadingAI ? (
+                      <>
+                        <div className="loading-spinner-small"></div>
+                        Getting Suggestions...
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Get AI Suggestions
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* AI Suggestions Display */}
+            {showAISuggestions && aiSuggestions.length > 0 && (
+              <div className="ai-suggestions-display">
+                <div className="suggestions-header">
+                  <h4>AI Suggestions</h4>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAISuggestions(false)}
+                    className="close-suggestions"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="suggestions-list">
+                  {aiSuggestions.map((suggestion, index) => (
+                    <div key={index} className="suggestion-card">
+                      <div className="suggestion-content">
+                        <h5>{suggestion.title}</h5>
+                        <p className="suggestion-description">{suggestion.description}</p>
+                        <div className="suggestion-meta">
+                          <span className="suggestion-type">{suggestion.type}</span>
+                          {suggestion.location && (
+                            <span className="suggestion-location">📍 {suggestion.location}</span>
+                          )}
+                          {suggestion.rating && (
+                            <span className="suggestion-rating">⭐ {suggestion.rating}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUseAISuggestion(suggestion)}
+                        className="use-suggestion-button"
+                      >
+                        Use This
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <form onSubmit={handleSubmit} className="event-form">
               <div className="modal-body">
