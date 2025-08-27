@@ -8,7 +8,6 @@ const TravelsList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterDestination, setFilterDestination] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,9 +37,7 @@ const TravelsList = () => {
   const filteredTravels = travels.filter(travel => {
     const matchesSearch = travel.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (travel.description && travel.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesDestination = !filterDestination || 
-                              (travel.destination && travel.destination.toLowerCase().includes(filterDestination.toLowerCase()));
-    return matchesSearch && matchesDestination;
+    return matchesSearch;
   });
 
   const getDuration = (startDate, endDate) => {
@@ -110,20 +107,6 @@ const TravelsList = () => {
 
   return (
     <div className="travels-list-container">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>My Travels</h1>
-          <p>Explore and manage your travel adventures</p>
-        </div>
-        <button 
-          className="new-travel-button"
-          onClick={() => navigate('/new-travel')}
-        >
-          <span>+</span>
-          New Travel
-        </button>
-      </div>
-
       <div className="filters-section">
         <div className="search-container">
           <input
@@ -134,15 +117,6 @@ const TravelsList = () => {
             className="search-input"
           />
         </div>
-        <div className="filter-container">
-          <input
-            type="text"
-            placeholder="Filter by destination..."
-            value={filterDestination}
-            onChange={(e) => setFilterDestination(e.target.value)}
-            className="filter-input"
-          />
-        </div>
       </div>
 
       {filteredTravels.length === 0 ? (
@@ -150,12 +124,12 @@ const TravelsList = () => {
           <div className="empty-icon">✈️</div>
           <h3>No travels found</h3>
           <p>
-            {searchTerm || filterDestination 
-              ? 'Try adjusting your search or filters'
+            {searchTerm 
+              ? 'Try adjusting your search'
               : 'Start planning your next adventure!'
             }
           </p>
-          {!searchTerm && !filterDestination && (
+          {!searchTerm && (
             <button 
               className="new-travel-button empty-state-button"
               onClick={() => navigate('/new-travel')}
