@@ -211,17 +211,6 @@ const Timeline = () => {
 
     return (
       <div className="horizontal-travel-timeline">
-        <div className="timeline-header-info">
-          <div className="travel-duration">
-            <span className="duration-badge">
-              {travelDates.length} {travelDates.length === 1 ? 'day' : 'days'}
-            </span>
-            <span className="travel-dates">
-              {format(travelDates[0], 'MMM d')} - {format(travelDates[travelDates.length - 1], 'MMM d, yyyy')}
-            </span>
-          </div>
-        </div>
-
         <div className="timeline-dates-container">
           <div className="timeline-dates-scroll">
             {travelDates.map((date, index) => {
@@ -268,7 +257,7 @@ const Timeline = () => {
           <button 
             className="nav-button" 
             onClick={handlePreviousPeriod}
-            disabled={travelDates.findIndex(date => isSameDay(date, selectedDate)) === 0}
+            disabled={currentIndex === 0}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -277,14 +266,14 @@ const Timeline = () => {
           </button>
           
           <div className="current-day-info">
-            <span className="day-label">Day {travelDates.findIndex(date => isSameDay(date, selectedDate)) + 1} of {travelDates.length}</span>
+            <span className="day-label">Day {currentIndex + 1} of {travelDates.length}</span>
             <span className="date-label">{format(selectedDate, 'EEEE, MMMM d')}</span>
           </div>
           
           <button 
             className="nav-button" 
             onClick={handleNextPeriod}
-            disabled={travelDates.findIndex(date => isSameDay(date, selectedDate)) === travelDates.length - 1}
+            disabled={currentIndex === travelDates.length - 1}
           >
             Next
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
