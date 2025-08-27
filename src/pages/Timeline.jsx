@@ -576,30 +576,28 @@ const Timeline = () => {
                   </select>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="start">Start Time *</label>
-                    <input
-                      type="datetime-local"
-                      id="start"
-                      value={format(formData.start, "yyyy-MM-dd'T'HH:mm")}
-                      onChange={(e) => handleInputChange('start', new Date(e.target.value))}
-                      required
-                      className="form-input"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label htmlFor="start">Start Time *</label>
+                  <input
+                    type="datetime-local"
+                    id="start"
+                    value={format(formData.start, "yyyy-MM-dd'T'HH:mm")}
+                    onChange={(e) => handleInputChange('start', new Date(e.target.value))}
+                    required
+                    className="form-input"
+                  />
+                </div>
 
-                  <div className="form-group">
-                    <label htmlFor="end">End Time *</label>
-                    <input
-                      type="datetime-local"
-                      id="end"
-                      value={format(formData.end, "yyyy-MM-dd'T'HH:mm")}
-                      onChange={(e) => handleInputChange('end', new Date(e.target.value))}
-                      required
-                      className="form-input"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label htmlFor="end">End Time *</label>
+                  <input
+                    type="datetime-local"
+                    id="end"
+                    value={format(formData.end, "yyyy-MM-dd'T'HH:mm")}
+                    onChange={(e) => handleInputChange('end', new Date(e.target.value))}
+                    required
+                    className="form-input"
+                  />
                 </div>
 
                 <div className="form-group">
